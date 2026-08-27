@@ -1,0 +1,43 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="auth-container">
+    <h2>Edit Booking</h2>
+    <div class="card mb-3">
+        <div class="card-body">
+            <p><strong>Candidate:</strong> {{ booking.user_name }}</p>
+            <p><strong>License:</strong> {{ booking.license_name }}</p>
+            <p><strong>Date:</strong> {{ booking.interview_date }}</p>
+            <p><strong>Time:</strong> {{ booking.start_time }} - {{ booking.end_time }}</p>
+        </div>
+    </div>
+    <form method="POST" action="{{ url_for('main.edit_booking', booking_id=booking.id) }}">
+        <div class="form-group">
+            <label for="company_name">Company Name:</label>
+            <input type="text" id="company_name" name="company_name" value="{{ booking.company_name or '' }}" required>
+        </div>
+        <div class="form-group">
+            <label for="technology">Technology:</label>
+            <input type="text" id="technology" name="technology" value="{{ booking.technology or '' }}" required>
+        </div>
+        <div class="form-group">
+            <label for="interview_round">Interview Round:</label>
+            <select id="interview_round" name="interview_round" required>
+                <option value="">-- Select Round --</option>
+                <option value="L1" {% if booking.interview_round == 'L1' %}selected{% endif %}>L1</option>
+                <option value="L2" {% if booking.interview_round == 'L2' %}selected{% endif %}>L2</option>
+                <option value="L3" {% if booking.interview_round == 'L3' %}selected{% endif %}>L3</option>
+                <option value="Client Round" {% if booking.interview_round == 'Client Round' %}selected{% endif %}>Client Round</option>
+                <option value="Manager Round" {% if booking.interview_round == 'Manager Round' %}selected{% endif %}>Manager Round</option>
+                <option value="HR Round" {% if booking.interview_round == 'HR Round' %}selected{% endif %}>HR Round</option>
+            </select>
+        </div>
+        <div class="form-group">
+            <label for="remarks">Remarks:</label>
+            <textarea id="remarks" name="remarks" rows="3">{{ booking.remarks or '' }}</textarea>
+        </div>
+        <button type="submit">Update Booking</button>
+    </form>
+    <p><a href="{{ url_for('main.hr_dashboard') }}">Back to Dashboard</a></p>
+</div>
+{% endblock %}

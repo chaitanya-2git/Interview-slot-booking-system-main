@@ -1,0 +1,602 @@
+{% extends "base.html" %}
+
+{% block content %}
+
+<!-- ══════════════════════════════════════════════
+     SIDEBAR
+══════════════════════════════════════════════ -->
+<aside class="sidebar" id="sidebar">
+    <!-- Logo -->
+    <a href="{{ url_for('main.hr_dashboard') }}" class="sidebar-logo">
+        <img src="{{ url_for('static', filename='images/blujay_logo.jpg') }}" alt="BluJay">
+        <div class="sidebar-logo-text">
+            <span class="sidebar-logo-name">BluJay</span>
+            <div class="sidebar-logo-sub">Technologies</div>
+        </div>
+    </a>
+
+    <!-- User -->
+    <div class="sidebar-user">
+        <div class="sidebar-avatar">{{ user_name[0] if user_name else 'H' }}</div>
+        <div class="sidebar-user-info">
+            <div class="sidebar-user-name">{{ user_name }}</div>
+            <div class="sidebar-user-role">HR Admin</div>
+        </div>
+    </div>
+
+    <!-- Nav -->
+    <nav class="sidebar-nav">
+        <button class="sidebar-link active" data-section="dashboard" id="nav-dashboard">
+            <i class="bi bi-grid-1x2"></i> Dashboard
+        </button>
+        <button class="sidebar-link" data-section="bookings" id="nav-bookings">
+            <i class="bi bi-calendar-check"></i> Bookings
+        </button>
+        <!-- removed todays interviews link as it's on dashboard -->
+        <a href="{{ url_for('main.create_slot') }}" class="sidebar-link">
+            <i class="bi bi-plus-circle"></i> Create Slot
+        </a>
+        <button class="sidebar-link" data-section="available-slots">
+            <i class="bi bi-clock"></i> Interview Slots
+        </button>
+        <a href="{{ url_for('main.manage_candidates') }}" class="sidebar-link">
+            <i class="bi bi-people"></i> Candidates
+        </a>
+        <button class="sidebar-link" data-section="notifications">
+            <i class="bi bi-bell"></i> Notifications
+            {% if unread_count and unread_count > 0 %}
+            <span class="sidebar-badge">{{ unread_count }}</span>
+            {% endif %}
+        </button>
+        <button class="sidebar-link" data-section="reports">
+            <i class="bi bi-bar-chart"></i> Reports
+        </button>
+
+        <div class="sidebar-divider"></div>
+
+        <a href="{{ url_for('main.change_password') }}" class="sidebar-link">
+            <i class="bi bi-gear"></i> Settings
+        </a>
+        <a href="{{ url_for('main.logout') }}" class="sidebar-link sidebar-logout">
+            <i class="bi bi-box-arrow-right"></i> Sign Out
+        </a>
+    </nav>
+</aside>
+
+<!-- ══════════════════════════════════════════════
+     TOP HEADER
+══════════════════════════════════════════════ -->
+<header class="top-header">
+    <div style="display:flex;align-items:center;gap:12px;">
+        <button class="sidebar-toggle" id="sidebarToggle" aria-label="Toggle sidebar">
+            <i class="bi bi-list"></i>
+        </button>
+        <div>
+            <div class="header-title" id="headerTitle">BluJay Technologies</div>
+            <div class="header-subtitle">Interview Management</div>
+        </div>
+    </div>
+    <div class="header-actions">
+        <a href="{{ url_for('main.create_slot') }}" class="btn btn-primary btn-sm">
+            <i class="bi bi-plus"></i> New Slot
+        </a>
+        <a href="{{ url_for('main.logout') }}" class="header-icon-btn" title="Sign out">
+            <i class="bi bi-box-arrow-right"></i>
+        </a>
+    </div>
+</header>
+
+<!-- ══════════════════════════════════════════════
+     MAIN CONTENT
+══════════════════════════════════════════════ -->
+<main class="main-content" id="mainContent">
+<div class="content-area">
+
+    <!-- ── DASHBOARD SECTION ── -->
+    <div id="section-dashboard" class="content-section active">
+        <div class="page-header">
+            <div>
+                <div class="page-greeting">Good day, {{ user_name }} 👋</div>
+                <div class="page-meta">Here's your interview scheduling overview for today.</div>
+            </div>
+            <a href="{{ url_for('main.create_slot') }}" class="btn btn-primary">
+                <i class="bi bi-plus"></i> Create Interview Slot
+            </a>
+        </div>
+
+        <!-- KPI row -->
+        <div class="kpi-row">
+            <div class="kpi-block">
+                <div class="kpi-icon"><i class="bi bi-calendar-check"></i></div>
+                <div class="kpi-value">{{ stats.total_bookings if stats else '—' }}</div>
+                <div class="kpi-label">Total Bookings</div>
+            </div>
+            <div class="kpi-block">
+                <div class="kpi-icon"><i class="bi bi-calendar-day"></i></div>
+                <div class="kpi-value">{{ stats.todays_interviews if stats else '—' }}</div>
+                <div class="kpi-label">Today's Interviews</div>
+            </div>
+            <div class="kpi-block">
+                <div class="kpi-icon"><i class="bi bi-clock"></i></div>
+                <div class="kpi-value">{{ stats.available_slots if stats else '—' }}</div>
+                <div class="kpi-label">Available Slots</div>
+            </div>
+            <div class="kpi-block">
+                <div class="kpi-icon"><i class="bi bi-people"></i></div>
+                <div class="kpi-value">{{ stats.total_candidates if stats else '—' }}</div>
+                <div class="kpi-label">Candidates</div>
+            </div>
+        </div>
+
+                <!-- Today's Interviews -->
+        <div class="panel" style="margin-top:var(--sp-6);">
+            <div class="panel-header">
+                <span class="panel-title" style="font-size:16px;font-weight:700;">Today's Interviews</span>
+            </div>
+            <div class="table-responsive">
+                <table class="table table-hover">
+                    <thead>
+                        <tr>
+                            <th>Time</th>
+                            <th>Candidate</th>
+                            <th>Technology</th>
+                            <th>Round</th>
+                            <th>Status</th>
+                            <th>Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% if todays_bookings %}
+                        {% for booking in todays_bookings %}
+                        <tr>
+                            <td data-label="Time" style="white-space:nowrap;font-weight:600;">{{ booking.start_time }} – {{ booking.end_time }}</td>
+                            <td data-label="Candidate">
+                                <div class="candidate-cell">
+                                    <div class="cell-avatar">{{ booking.user_name[0] if booking.user_name else '?' }}</div>
+                                    <span class="cell-name">{{ booking.user_name }}</span>
+                                </div>
+                            </td>
+                            <td data-label="Technology">{{ booking.technology or '—' }}</td>
+                            <td data-label="Round">{{ booking.interview_round or '—' }}</td>
+                            <td data-label="Status">
+                                {% if booking.booking_status == 'confirmed' %}
+                                    <span class="badge bg-success">Confirmed</span>
+                                {% elif booking.booking_status == 'cancelled' %}
+                                    <span class="badge bg-danger">Cancelled</span>
+                                {% elif booking.booking_status == 'completed' %}
+                                    <span class="badge bg-info">Completed</span>
+                                {% else %}
+                                    <span class="badge bg-secondary">{{ booking.booking_status }}</span>
+                                {% endif %}
+                            </td>
+                            <td data-label="Actions">
+                                <div class="action-menu">
+                                    <a href="{{ url_for('main.candidate_history', user_id=booking.user_id) }}" class="btn btn-outline-primary btn-sm" style="padding:4px 10px !important;">
+                                        View
+                                    </a>
+                                    {% if booking.booking_status == 'confirmed' and not booking.interview_completed %}
+                                    <a href="{{ url_for('main.complete_interview_route', booking_id=booking.id) }}" class="btn btn-success btn-sm" style="padding:4px 10px !important;">
+                                        Complete
+                                    </a>
+                                    {% endif %}
+                                </div>
+                            </td>
+                        </tr>
+                        {% endfor %}
+                        {% else %}
+                        <tr>
+                            <td colspan="6">
+                                <div class="empty-state">
+                                    <div class="empty-state-icon"><i class="bi bi-sun"></i></div>
+                                    <div class="empty-state-title">No interviews today</div>
+                                    <div class="empty-state-sub">Your schedule is clear for today.</div>
+                                </div>
+                            </td>
+                        </tr>
+                        {% endif %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+
+    <!-- ── BOOKINGS SECTION ── -->
+    <div id="section-bookings" class="content-section">
+        <div class="dashboard-header">
+            <h2>All Bookings</h2>
+            <button class="btn btn-secondary btn-sm" onclick="activateSection('dashboard')" id="backToDashboardBtn">
+                <i class="bi bi-arrow-left"></i> Back
+            </button>
+        </div>
+
+        <div class="panel">
+            <div class="table-toolbar">
+                <span class="panel-title">Interview Bookings</span>
+                <div class="table-search">
+                    <i class="bi bi-search"></i>
+                    <input type="text" id="bookingsSearch" placeholder="Search bookings…">
+                </div>
+            </div>
+            <div class="table-responsive">
+                <table class="table table-hover" id="bookingsTable">
+                    <thead>
+                        <tr>
+                            <th>Candidate</th>
+                            <th>Company</th>
+                            <th>Technology</th>
+                            <th>Round</th>
+                            <th>HR Contact</th>
+                            <th>License</th>
+                            <th>Date</th>
+                            <th>Time</th>
+                            <th>Support</th>
+                            <th>Status</th>
+                            <th>Remarks</th>
+                            <th>Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% if bookings %}
+                        {% for booking in bookings %}
+                        <tr>
+                            <td data-label="Candidate">
+                                <div class="candidate-cell">
+                                    <div class="cell-avatar">{{ booking.user_name[0] if booking.user_name else '?' }}</div>
+                                    <span class="cell-name">{{ booking.user_name }}</span>
+                                </div>
+                            </td>
+                            <td data-label="Company">{{ booking.company_name or '—' }}</td>
+                            <td data-label="Technology">{{ booking.technology or '—' }}</td>
+                            <td data-label="Round">{{ booking.interview_round or '—' }}</td>
+                            <td data-label="HR Contact">
+                                {% if booking.hr_name %}
+                                    <div style="font-weight:500;">{{ booking.hr_name }}</div>
+                                    <div style="font-size:11px;color:var(--c-text-muted);">{{ booking.hr_number }}</div>
+                                {% else %}
+                                    —
+                                {% endif %}
+                            </td>
+                            <td>
+                                <span class="badge bg-secondary">{{ booking.license_name }}</span>
+                            </td>
+                            <td data-label="Date" style="white-space:nowrap;">{{ booking.interview_date }}</td>
+                            <td data-label="Time" style="white-space:nowrap;">{{ booking.start_time }} – {{ booking.end_time }}</td>
+                            <td data-label="Support">
+                                {% if booking.support_person %}
+                                    <span class="badge bg-info">{{ booking.support_person }}</span>
+                                {% else %}
+                                    <form action="{{ url_for('main.assign_support_person_route', booking_id=booking.id) }}" method="POST" style="display:flex;gap:4px;min-width:140px;">
+                                        <input type="text" name="support_person" class="form-control form-control-sm" placeholder="Assign…" required style="flex:1;">
+                                        <button type="submit" class="btn btn-outline-primary btn-sm">Set</button>
+                                    </form>
+                                {% endif %}
+                            </td>
+                            <td data-label="Status">
+                                {% if booking.booking_status == 'confirmed' %}
+                                    <span class="badge bg-success">Confirmed</span>
+                                {% elif booking.booking_status == 'cancelled' %}
+                                    <span class="badge bg-danger">Cancelled</span>
+                                {% elif booking.booking_status == 'completed' %}
+                                    <span class="badge bg-info">Completed</span>
+                                {% else %}
+                                    <span class="badge bg-secondary">{{ booking.booking_status }}</span>
+                                {% endif %}
+                            </td>
+                            <td style="max-width:140px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;"
+                                title="{{ booking.remarks or '' }}">
+                                {{ booking.remarks or '—' }}
+                            </td>
+                            <td data-label="Actions">
+                                <div class="action-menu">
+                                    <a href="{{ url_for('main.candidate_history', user_id=booking.user_id) }}"
+                                       class="action-icon-btn" title="View candidate">
+                                        <i class="bi bi-person"></i>
+                                    </a>
+                                    <button type="button"
+                                            class="action-icon-btn reschedule-btn"
+                                            data-booking-id="{{ booking.id }}"
+                                            data-bs-toggle="modal"
+                                            data-bs-target="#rescheduleModal"
+                                            title="Reschedule">
+                                        <i class="bi bi-calendar-event"></i>
+                                    </button>
+                                    <a href="{{ url_for('main.create_candidate_slot', user_id=booking.user_id) }}"
+                                       class="action-icon-btn" title="Add extra slot">
+                                        <i class="bi bi-plus-circle"></i>
+                                    </a>
+                                    {% if booking.booking_status == 'confirmed' and not booking.interview_completed %}
+                                    <a href="{{ url_for('main.complete_interview_route', booking_id=booking.id) }}"
+                                       class="action-icon-btn success" title="Mark complete">
+                                        <i class="bi bi-check-circle"></i>
+                                    </a>
+                                    {% endif %}
+                                    <form action="{{ url_for('main.cancel_booking_route', booking_id=booking.id) }}" method="POST" style="display:inline;"
+                                          onsubmit="return confirm('Cancel this booking?')">
+                                        <button type="submit" class="action-icon-btn danger" title="Cancel booking">
+                                            <i class="bi bi-x-circle"></i>
+                                        </button>
+                                    </form>
+                                </div>
+                            </td>
+                        </tr>
+                        {% endfor %}
+                        {% else %}
+                        <tr>
+                            <td colspan="11">
+                                <div class="empty-state">
+                                    <div class="empty-state-icon"><i class="bi bi-calendar-x"></i></div>
+                                    <div class="empty-state-title">No bookings yet</div>
+                                    <div class="empty-state-sub">When candidates book interview slots, they will appear here.</div>
+                                </div>
+                            </td>
+                        </tr>
+                        {% endif %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+
+
+    <!-- ── AVAILABLE SLOTS SECTION ── -->
+    <div id="section-available-slots" class="content-section">
+        <div class="dashboard-header">
+            <h2>Available Slots</h2>
+            <a href="{{ url_for('main.create_slot') }}" class="btn btn-primary btn-sm">
+                <i class="bi bi-plus"></i> Create Slot
+            </a>
+        </div>
+
+        <div class="panel">
+            <div class="panel-header">
+                <span class="panel-title">Slot Availability by Date</span>
+            </div>
+            <div class="panel-body">
+                <div class="form-group" style="max-width:280px;margin-bottom:20px;">
+                    <label for="interviewDateSelector">Select Date</label>
+                    <input type="date" id="interviewDateSelector" class="form-control">
+                </div>
+                <div class="table-responsive">
+                    <table class="table table-hover" id="availableSlotsTable">
+                        <thead>
+                            <tr>
+                                <th>License</th>
+                                <th>Date</th>
+                                <th>Start</th>
+                                <th>End</th>
+                                <th>Action</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <tr>
+                                <td colspan="5">
+                                    <div class="empty-state">
+                                        <div class="empty-state-icon"><i class="bi bi-calendar"></i></div>
+                                        <div class="empty-state-title">Select a date</div>
+                                        <div class="empty-state-sub">Choose a date above to view available slots.</div>
+                                    </div>
+                                </td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+
+        <!-- Existing slots list -->
+        {% if slots %}
+        <div class="panel" style="margin-top:8px;">
+            <div class="panel-header">
+                <span class="panel-title">All Interview Slots</span>
+            </div>
+            <div class="table-responsive">
+                <table class="table table-hover">
+                    <thead>
+                        <tr>
+                            <th>License</th>
+                            <th>Date</th>
+                            <th>Start</th>
+                            <th>End</th>
+                            <th>Status</th>
+                            <th>Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for slot in slots %}
+                        <tr>
+                            <td><span class="badge bg-secondary">{{ slot.license_name }}</span></td>
+                            <td>{{ slot.interview_date }}</td>
+                            <td>{{ slot.start_time }}</td>
+                            <td>{{ slot.end_time }}</td>
+                            <td>
+                                {% if slot.status == 'available' %}
+                                    <span class="badge bg-success">Available</span>
+                                {% elif slot.status == 'booked' %}
+                                    <span class="badge bg-warning">Booked</span>
+                                {% else %}
+                                    <span class="badge bg-secondary">{{ slot.status }}</span>
+                                {% endif %}
+                            </td>
+                            <td data-label="Actions">
+                                <div class="action-menu">
+                                    <a href="{{ url_for('main.edit_slot', slot_id=slot.id) }}" class="action-icon-btn" title="Edit">
+                                        <i class="bi bi-pencil"></i>
+                                    </a>
+                                    <form action="{{ url_for('main.delete_slot', slot_id=slot.id) }}" method="POST" style="display:inline;"
+                                          onsubmit="return confirm('Delete this slot?')">
+                                        <button type="submit" class="action-icon-btn danger" title="Delete">
+                                            <i class="bi bi-trash"></i>
+                                        </button>
+                                    </form>
+                                </div>
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+        {% endif %}
+    </div>
+
+    <!-- ── NOTIFICATIONS SECTION ── -->
+    <div id="section-notifications" class="content-section">
+        <div class="dashboard-header">
+            <h2>Notifications</h2>
+            {% if unread_count and unread_count > 0 %}
+            <span class="badge bg-danger">{{ unread_count }} unread</span>
+            {% endif %}
+        </div>
+
+        <div class="panel">
+            <div class="notification-list">
+                {% if notifications %}
+                    {% for notif in notifications %}
+                    <div class="notification-item {% if not notif.is_read %}unread{% endif %}">
+                        <div class="notification-icon">
+                            {% if notif.notification_type == 'new_booking' or notif.notification_type == 'booking_success' %}
+                                <i class="bi bi-calendar-plus" style="color:var(--c-success);"></i>
+                            {% elif notif.notification_type == 'booking_cancelled' %}
+                                <i class="bi bi-calendar-x" style="color:var(--c-danger);"></i>
+                            {% elif notif.notification_type == 'interview_rescheduled' %}
+                                <i class="bi bi-calendar-event" style="color:var(--c-accent);"></i>
+                            {% elif notif.notification_type == 'result_available' %}
+                                <i class="bi bi-award" style="color:var(--c-warning);"></i>
+                            {% else %}
+                                <i class="bi bi-bell" style="color:var(--c-text-muted);"></i>
+                            {% endif %}
+                        </div>
+                        <div class="notification-content">
+                            <div class="notification-msg">{{ notif.message }}</div>
+                            {% if notif.created_at %}
+                            <div class="notification-time">{{ notif.created_at }}</div>
+                            {% endif %}
+                        </div>
+                        {% if not notif.is_read %}
+                        <div class="notification-dot"></div>
+                        {% endif %}
+                        <form action="{{ url_for('main.mark_notification_read_route', notification_id=notif.id) }}" method="POST" style="flex-shrink:0;">
+                            <button type="submit" class="action-icon-btn" title="Mark read" style="width:24px;height:24px;">
+                                <i class="bi bi-check"></i>
+                            </button>
+                        </form>
+                    </div>
+                    {% endfor %}
+                {% else %}
+                    <div class="empty-state">
+                        <div class="empty-state-icon"><i class="bi bi-bell-slash"></i></div>
+                        <div class="empty-state-title">No notifications</div>
+                        <div class="empty-state-sub">You're all caught up. New notifications will appear here.</div>
+                    </div>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+
+    <!-- ── REPORTS SECTION ── -->
+    <div id="section-reports" class="content-section">
+        <div class="dashboard-header">
+            <h2>Reports &amp; Analytics</h2>
+        </div>
+
+        <div class="kpi-row">
+            <div class="kpi-block">
+                <div class="kpi-icon"><i class="bi bi-calendar-check"></i></div>
+                <div class="kpi-value">{{ stats.total_bookings if stats else '—' }}</div>
+                <div class="kpi-label">Total Bookings</div>
+            </div>
+            <div class="kpi-block">
+                <div class="kpi-icon"><i class="bi bi-calendar-day"></i></div>
+                <div class="kpi-value">{{ stats.todays_interviews if stats else '—' }}</div>
+                <div class="kpi-label">Today's Interviews</div>
+            </div>
+            <div class="kpi-block">
+                <div class="kpi-icon"><i class="bi bi-clock"></i></div>
+                <div class="kpi-value">{{ stats.available_slots if stats else '—' }}</div>
+                <div class="kpi-label">Available Slots</div>
+            </div>
+            <div class="kpi-block">
+                <div class="kpi-icon"><i class="bi bi-people"></i></div>
+                <div class="kpi-value">{{ stats.total_candidates if stats else '—' }}</div>
+                <div class="kpi-label">Total Candidates</div>
+            </div>
+        </div>
+
+        <div class="panel">
+            <div class="panel-header"><span class="panel-title">Summary</span></div>
+            <div class="panel-body">
+                <p style="color:var(--c-text-secondary);font-size:13px;">
+                    Detailed analytics and interview statistics are displayed above. Use the Bookings section for a full interview breakdown.
+                </p>
+            </div>
+        </div>
+    </div>
+
+</div>
+</main>
+
+<!-- ══════════════════════════════════════════════
+     RESCHEDULE MODAL
+══════════════════════════════════════════════ -->
+<div class="modal fade" id="rescheduleModal" tabindex="-1" aria-labelledby="rescheduleModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-lg">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="rescheduleModalLabel">
+                    <i class="bi bi-calendar-event" style="margin-right:8px;color:var(--c-accent);"></i>
+                    Reschedule Interview
+                </h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+                <div id="rescheduleModalContent">
+                    <div class="text-center p-4">
+                        <div class="spinner-border" role="status">
+                            <span class="visually-hidden">Loading…</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+{% endblock %}
+
+{% block extra_scripts %}
+<script>
+// Section switcher helper (used by quick-action buttons)
+function activateSection(section) {
+    document.querySelectorAll('.sidebar-link[data-section]').forEach(function(l) {
+        if (l.dataset.section === section) l.click();
+    });
+}
+
+// Bookings table search
+var bSearch = document.getElementById('bookingsSearch');
+if (bSearch) {
+    bSearch.addEventListener('input', function() {
+        var val = this.value.toLowerCase();
+        var rows = document.querySelectorAll('#bookingsTable tbody tr');
+        rows.forEach(function(row) {
+            row.style.display = row.textContent.toLowerCase().includes(val) ? '' : 'none';
+        });
+    });
+}
+
+// Update header title on nav click
+document.querySelectorAll('.sidebar-link[data-section]').forEach(function(link) {
+    link.addEventListener('click', function() {
+        var titles = {
+            'dashboard': 'Dashboard',
+            'bookings': 'All Bookings',
+            'available-slots': 'Available Slots',
+            'notifications': 'Notifications',
+            'reports': 'Reports'
+        };
+        var ht = document.getElementById('headerTitle');
+        if (ht && titles[this.dataset.section]) ht.textContent = titles[this.dataset.section];
+    });
+});
+</script>
+{% endblock %}

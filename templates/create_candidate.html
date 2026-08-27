@@ -1,0 +1,48 @@
+{% extends "base.html" %}
+{% block content %}
+<div class="standalone-page">
+<div class="standalone-page-inner">
+    <div style="margin-bottom:16px;">
+        <a href="{{ url_for('main.manage_candidates') }}" class="btn btn-secondary btn-sm">
+            <i class="bi bi-arrow-left"></i> Back to Candidates
+        </a>
+    </div>
+
+    {% with messages = get_flashed_messages(with_categories=true) %}
+        {% if messages %}{% for category, message in messages %}
+        <div class="alert alert-{{ category }}">{{ message }}</div>
+        {% endfor %}{% endif %}
+    {% endwith %}
+
+    <div class="form-shell">
+        <div class="form-shell-header">
+            <div class="form-shell-title">Create Candidate</div>
+            <div class="form-shell-sub">Add a new candidate account. They will receive login credentials to access the portal.</div>
+        </div>
+        <div class="form-shell-body">
+            <form method="POST" action="{{ url_for('main.create_candidate') }}">
+                <div class="form-group">
+                    <label for="name">Full Name <span style="color:var(--c-danger);">*</span></label>
+                    <input type="text" id="name" name="name" class="form-control" required placeholder="e.g. Jane Doe">
+                </div>
+                <div class="form-group">
+                    <label for="email">Email Address <span style="color:var(--c-danger);">*</span></label>
+                    <input type="email" id="email" name="email" class="form-control" required placeholder="candidate@example.com">
+                </div>
+                <div class="form-group">
+                    <label for="password">Temporary Password <span style="color:var(--c-danger);">*</span></label>
+                    <input type="password" id="password" name="password" class="form-control" required>
+                    <div style="font-size:11px;color:var(--c-text-muted);margin-top:4px;">The candidate should change this on first login.</div>
+                </div>
+                <div style="display:flex;gap:12px;margin-top:8px;">
+                    <button type="submit" class="btn btn-primary">
+                        <i class="bi bi-person-plus"></i> Create Account
+                    </button>
+                    <a href="{{ url_for('main.manage_candidates') }}" class="btn btn-secondary">Cancel</a>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+</div>
+{% endblock %}

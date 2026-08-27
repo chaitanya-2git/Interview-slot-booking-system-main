@@ -1,0 +1,173 @@
+{% extends "base.html" %}
+{% block content %}
+<div class="standalone-page">
+<div style="max-width:1100px;margin:0 auto;">
+
+    <div class="page-header">
+        <div>
+            <div style="font-size:20px;font-weight:700;color:var(--c-text-primary);">Candidate History</div>
+            <div style="font-size:13px;color:var(--c-text-secondary);margin-top:4px;">
+                Interview records for <strong>{{ candidate.name }}</strong>
+            </div>
+        </div>
+        <a href="{{ url_for('main.hr_dashboard') }}" class="btn btn-secondary">
+            <i class="bi bi-arrow-left"></i> Back to Dashboard
+        </a>
+    </div>
+
+    <!-- Candidate info card -->
+    <div class="panel" style="margin-bottom:20px;">
+        <div class="panel-body" style="display:flex;align-items:center;gap:20px;flex-wrap:wrap;">
+            <div class="cell-avatar" style="width:48px;height:48px;font-size:18px;">
+                {{ candidate.name[0] if candidate.name else '?' }}
+            </div>
+            <div style="flex:1;">
+                <div style="font-size:16px;font-weight:600;color:var(--c-text-primary);">{{ candidate.name }}</div>
+                <div style="font-size:13px;color:var(--c-text-secondary);">{{ candidate.email }}</div>
+            </div>
+            {% if candidate.is_active == 1 %}
+                <span class="badge bg-success">Active</span>
+            {% else %}
+                <span class="badge bg-danger">Inactive</span>
+            {% endif %}
+            <div style="display:flex;gap:8px;">
+                <a href="{{ url_for('main.edit_candidate', user_id=candidate.id) }}" class="btn btn-secondary btn-sm">
+                    <i class="bi bi-pencil"></i> Edit
+                </a>
+                <a href="{{ url_for('main.create_candidate_slot', user_id=candidate.id) }}" class="btn btn-primary btn-sm">
+                    <i class="bi bi-plus"></i> Add Slot
+                </a>
+            </div>
+        </div>
+    </div>
+
+    <!-- System Interview History -->
+    <div class="panel" style="margin-bottom:20px;">
+        <div class="panel-header">
+            <span class="panel-title">System Interview History</span>
+            <span style="font-size:12px;color:var(--c-text-muted);">{{ history|length if history else 0 }} records</span>
+        </div>
+        {% if history %}
+        <div class="table-responsive">
+            <table class="table table-hover">
+                <thead>
+                    <tr>
+                        <th>Round</th>
+                        <th>Date</th>
+                        <th>Time</th>
+                        <th>License</th>
+                        <th>Company</th>
+                        <th>Technology</th>
+                        <th>Support</th>
+                        <th>Status</th>
+                        <th>Feedback</th>
+                        <th>Result</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for booking in history %}
+                    <tr>
+                        <td>{{ booking.interview_round or '—' }}</td>
+                        <td style="white-space:nowrap;">{{ booking.interview_date }}</td>
+                        <td style="white-space:nowrap;">{{ booking.start_time }} – {{ booking.end_time }}</td>
+                        <td><span class="badge bg-secondary">{{ booking.license_name }}</span></td>
+                        <td>{{ booking.company_name or '—' }}</td>
+                        <td>{{ booking.technology or '—' }}</td>
+                        <td>{{ booking.support_person or '—' }}</td>
+                        <td>
+                            {% if booking.booking_status == 'confirmed' %}
+                                {% if booking.interview_completed %}
+                                    <span class="badge bg-success">Completed</span>
+                                {% else %}
+                                    <span class="badge bg-info">Scheduled</span>
+                                {% endif %}
+                            {% elif booking.booking_status == 'cancelled' %}
+                                <span class="badge bg-danger">Cancelled</span>
+                            {% else %}
+                                <span class="badge bg-secondary">{{ booking.booking_status }}</span>
+                            {% endif %}
+                        </td>
+                        <td style="max-width:150px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;"
+                            title="{{ booking.interview_feedback or '' }}">
+                            {{ booking.interview_feedback or '—' }}
+                        </td>
+                        <td>
+                            {% if booking.interview_result %}
+                                {% if booking.interview_result == 'Selected' %}
+                                    <span class="badge bg-success">Selected</span>
+                                {% elif booking.interview_result == 'Rejected' %}
+                                    <span class="badge bg-danger">Rejected</span>
+                                {% else %}
+                                    <span class="badge bg-warning">{{ booking.interview_result }}</span>
+                                {% endif %}
+                            {% else %}
+                                <span class="badge bg-secondary">Pending</span>
+                            {% endif %}
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+        {% else %}
+        <div class="empty-state">
+            <div class="empty-state-icon"><i class="bi bi-calendar-x"></i></div>
+            <div class="empty-state-title">No interview history</div>
+            <div class="empty-state-sub">This candidate has no interviews recorded in the system.</div>
+        </div>
+        {% endif %}
+    </div>
+
+    <!-- External / Previous History -->
+    <div class="panel">
+        <div class="panel-header">
+            <span class="panel-title">External Interview History</span>
+            <span style="font-size:12px;color:var(--c-text-muted);">Self-reported by candidate</span>
+        </div>
+        {% if previous_history %}
+        <div class="table-responsive">
+            <table class="table table-hover">
+                <thead>
+                    <tr>
+                        <th>Company</th>
+                        <th>Round</th>
+                        <th>Date</th>
+                        <th>Result</th>
+                        <th>Remarks</th>
+                        <th>Added On</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for hist in previous_history %}
+                    <tr>
+                        <td style="font-weight:500;">{{ hist.company_name }}</td>
+                        <td>{{ hist.interview_round }}</td>
+                        <td>{{ hist.interview_date }}</td>
+                        <td>
+                            {% if hist.result == 'Selected' %}
+                                <span class="badge bg-success">Selected</span>
+                            {% elif hist.result == 'Rejected' %}
+                                <span class="badge bg-danger">Rejected</span>
+                            {% else %}
+                                <span class="badge bg-warning">{{ hist.result }}</span>
+                            {% endif %}
+                        </td>
+                        <td>{{ hist.remarks or '—' }}</td>
+                        <td style="color:var(--c-text-muted);">{{ hist.created_at }}</td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+        {% else %}
+        <div class="empty-state">
+            <div class="empty-state-icon"><i class="bi bi-clock-history"></i></div>
+            <div class="empty-state-title">No external history</div>
+            <div class="empty-state-sub">The candidate hasn't added any previous interview records.</div>
+        </div>
+        {% endif %}
+    </div>
+
+</div>
+</div>
+{% endblock %}

@@ -1,0 +1,50 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="container mt-4">
+    <h3>Reschedule Interview</h3>
+
+    <p>
+        <strong>Candidate:</strong> {{ booking.user_name }}
+    </p>
+
+    <p>
+        <strong>Current Slot:</strong>
+        {{ booking.interview_date }}
+        {{ booking.start_time }} - {{ booking.end_time }}
+    </p>
+
+    <form method="POST">
+        <div class="form-group mb-4">
+            <label for="rescheduleDate" class="form-label" style="font-weight:600;color:var(--c-text-primary);">New Interview Date</label>
+            <input type="date" id="rescheduleDate" name="interview_date" class="form-control" value="{{ booking.interview_date }}" required>
+        </div>
+        
+        <div class="form-group mb-4">
+            <label for="new_slot_id" class="form-label" style="font-weight:600;color:var(--c-text-primary);">Available Slot</label>
+            <select id="new_slot_id" name="new_slot_id" class="form-select" required>
+                {% for block in time_blocks %}
+                    {% if block.available > 0 %}
+                        <option value="{{ block.start_time }}">
+                            {{ block.start_time }} – {{ block.end_time }} ({{ block.available }} available)
+                        </option>
+                    {% else %}
+                        <option value="{{ block.start_time }}" disabled>
+                            {{ block.start_time }} – {{ block.end_time }} (Fully Booked)
+                        </option>
+                    {% endif %}
+                {% endfor %}
+            </select>
+        </div>
+
+        <button class="btn btn-primary">
+            Reschedule
+        </button>
+
+        <a href="{{ url_for('main.hr_dashboard') }}"
+           class="btn btn-secondary">
+           Cancel
+        </a>
+    </form>
+</div>
+{% endblock %}

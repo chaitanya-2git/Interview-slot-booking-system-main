@@ -1,0 +1,11 @@
+{% extends "simple_base.html" %}
+
+{% block content %}
+<div class="card mx-auto" style="max-width: 600px;">
+    <div class="card-body">
+        <h4 class="card-title mb-4">Welcome, {{ user.name }}!</h4>
+        <p>You are logged in with email <strong>{{ user.email }}</strong>.</p>
+        <a href="{{ url_for('logout') }}" class="btn btn-secondary">Logout</a>
+    </div>
+</div>
+{% endblock %}

@@ -1,0 +1,67 @@
+{% extends "base.html" %}
+
+{% block content %}
+
+<div class="container mt-4">
+
+    <h2>Reschedule Interview</h2>
+
+    <div class="card mb-4">
+        <div class="card-header bg-primary text-white">
+            Select a New Interview Slot
+        </div>
+
+        <div class="card-body">
+
+            <form method="POST"
+                  <form action="{{ url_for('main.reschedule_interview_route', booking_id=booking['id']) }}" method="POST"></form>
+
+                <div class="mb-3">
+
+                    <label class="form-label">
+                        Available Slots
+                    </label>
+
+                    <select class="form-select"
+                            name="new_slot_id"
+                            required>
+
+                        <option value="">
+                            -- Select Interview Slot --
+                        </option>
+
+                        {% for slot in available_slots %}
+
+                        <option value="{{ slot.id }}">
+                            {{ slot.license_name }}
+                            |
+                            {{ slot.interview_date }}
+                            |
+                            {{ slot.start_time }} - {{ slot.end_time }}
+                        </option>
+
+                        {% endfor %}
+
+                    </select>
+
+                </div>
+
+                <button type="submit"
+                        class="btn btn-success">
+                    Reschedule Interview
+                </button>
+
+                <a href="{{ url_for('main.hr_dashboard') }}"
+                   class="btn btn-secondary">
+                    Cancel
+                </a>
+
+            </form>
+
+        </div>
+
+    </div>
+
+</div>
+
+{% endblock %}

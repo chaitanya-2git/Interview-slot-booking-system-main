@@ -1,0 +1,48 @@
+<div style="margin-bottom:16px;">
+    <div style="font-size:11px;font-weight:600;color:var(--c-text-muted);text-transform:uppercase;letter-spacing:.5px;margin-bottom:8px;">Candidate</div>
+    <div style="font-weight:600;color:var(--c-text-primary);">{{ booking.user_name }}</div>
+</div>
+
+<div style="background:var(--c-bg);border:1px solid var(--c-border);border-radius:6px;padding:12px 16px;margin-bottom:20px;">
+    <div style="font-size:11px;font-weight:600;color:var(--c-text-muted);text-transform:uppercase;letter-spacing:.5px;margin-bottom:6px;">Current Slot</div>
+    <div style="font-weight:600;color:var(--c-text-primary);">
+        {{ booking.interview_date }} &nbsp;·&nbsp; {{ booking.start_time }} – {{ booking.end_time }}
+    </div>
+</div>
+
+<form method="POST">
+    <div class="form-group">
+        <label for="rescheduleDate">New Interview Date</label>
+        <input type="date"
+               id="rescheduleDate"
+               name="interview_date"
+               class="form-control"
+               value="{{ booking.interview_date }}" required>
+    </div>
+
+    <div class="form-group">
+        <label for="new_slot_id">Available Slot</label>
+        <select id="new_slot_id" name="new_slot_id" class="form-select" required>
+            {% for block in time_blocks %}
+                {% if block.available > 0 %}
+                    <option value="{{ block.start_time }}">
+                        {{ block.start_time }} – {{ block.end_time }} ({{ block.available }} available)
+                    </option>
+                {% else %}
+                    <option value="{{ block.start_time }}" disabled>
+                        {{ block.start_time }} – {{ block.end_time }} (Fully Booked)
+                    </option>
+                {% endif %}
+            {% endfor %}
+        </select>
+    </div>
+
+    <div style="display:flex;gap:12px;margin-top:16px;">
+        <button type="submit" class="btn btn-primary">
+            <i class="bi bi-calendar-check"></i> Reschedule
+        </button>
+        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">
+            Cancel
+        </button>
+    </div>
+</form>

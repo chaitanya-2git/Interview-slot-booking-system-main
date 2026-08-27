@@ -1,0 +1,78 @@
+{% extends "base.html" %}
+{% block content %}
+<div class="standalone-page">
+<div class="standalone-page-inner">
+    <div style="margin-bottom:16px;">
+        <a href="{{ url_for('main.hr_dashboard') }}" class="btn btn-secondary btn-sm">
+            <i class="bi bi-arrow-left"></i> Back to Dashboard
+        </a>
+    </div>
+    <div class="form-shell" style="max-width:600px;">
+        <div class="form-shell-header">
+            <div class="form-shell-title">Create Extra Interview Slot</div>
+            <div class="form-shell-sub">
+                Create and book a dedicated slot for
+                <strong>{{ candidate.name }}</strong>.
+            </div>
+        </div>
+        <div class="form-shell-body">
+            <form method="POST">
+                <div class="form-group">
+                    <label>License <span style="color:var(--c-danger);">*</span></label>
+                    <select name="license_id" class="form-select" required>
+                        {% for license in licenses %}
+                        <option value="{{ license.id }}">{{ license.name }}</option>
+                        {% endfor %}
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label>Interview Date <span style="color:var(--c-danger);">*</span></label>
+                    <input type="date" name="interview_date" class="form-control" required>
+                </div>
+                <div style="display:grid;grid-template-columns:1fr 1fr;gap:16px;">
+                    <div class="form-group">
+                        <label>Start Time <span style="color:var(--c-danger);">*</span></label>
+                        <input type="time" name="start_time" class="form-control" required>
+                    </div>
+                    <div class="form-group">
+                        <label>End Time <span style="color:var(--c-danger);">*</span></label>
+                        <input type="time" name="end_time" class="form-control" required>
+                    </div>
+                </div>
+                <div style="display:grid;grid-template-columns:1fr 1fr;gap:16px;">
+                    <div class="form-group">
+                        <label>Company Name</label>
+                        <input type="text" name="company_name" class="form-control" placeholder="e.g. Infosys">
+                    </div>
+                    <div class="form-group">
+                        <label>Technology</label>
+                        <input type="text" name="technology" class="form-control" placeholder="e.g. Java, React">
+                    </div>
+                </div>
+                <div class="form-group">
+                    <label>Interview Round</label>
+                    <select name="interview_round" class="form-select">
+                        <option value="L1">L1</option>
+                        <option value="L2">L2</option>
+                        <option value="L3">L3</option>
+                        <option value="Manager Round">Manager Round</option>
+                        <option value="Client Round">Client Round</option>
+                        <option value="HR Round">HR Round</option>
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label>Remarks</label>
+                    <textarea name="remarks" rows="3" class="form-control" placeholder="Optional notes…"></textarea>
+                </div>
+                <div style="display:flex;gap:12px;margin-top:8px;">
+                    <button type="submit" class="btn btn-primary">
+                        <i class="bi bi-plus-circle"></i> Create &amp; Book Slot
+                    </button>
+                    <a href="{{ url_for('main.hr_dashboard') }}" class="btn btn-secondary">Cancel</a>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+</div>
+{% endblock %}

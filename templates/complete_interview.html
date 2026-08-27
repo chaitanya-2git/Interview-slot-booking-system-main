@@ -1,0 +1,60 @@
+{% extends "base.html" %}
+{% block content %}
+<div class="standalone-page">
+<div class="standalone-page-inner">
+    <div style="margin-bottom:16px;">
+        <a href="{{ url_for('main.hr_dashboard') }}" class="btn btn-secondary btn-sm">
+            <i class="bi bi-arrow-left"></i> Back to Dashboard
+        </a>
+    </div>
+    <div class="form-shell">
+        <div class="form-shell-header">
+            <div class="form-shell-title">Complete Interview</div>
+            <div class="form-shell-sub">
+                Mark this interview as completed and record the outcome for
+                <strong>{{ booking.user_name }}</strong>.
+            </div>
+        </div>
+        <div class="form-shell-body">
+            <!-- Details summary -->
+            <div style="background:var(--c-bg);border:1px solid var(--c-border);border-radius:6px;padding:16px;margin-bottom:20px;">
+                <div style="font-size:11px;font-weight:600;color:var(--c-text-muted);text-transform:uppercase;letter-spacing:.5px;margin-bottom:10px;">Interview Details</div>
+                <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px 24px;">
+                    <div><span style="font-size:11px;color:var(--c-text-muted);">Company</span><div style="font-weight:500;">{{ booking.company_name or '—' }}</div></div>
+                    <div><span style="font-size:11px;color:var(--c-text-muted);">Technology</span><div style="font-weight:500;">{{ booking.technology or '—' }}</div></div>
+                    <div><span style="font-size:11px;color:var(--c-text-muted);">Round</span><div style="font-weight:500;">{{ booking.interview_round or '—' }}</div></div>
+                    <div><span style="font-size:11px;color:var(--c-text-muted);">License</span><div style="font-weight:500;">{{ booking.license_name }}</div></div>
+                    <div><span style="font-size:11px;color:var(--c-text-muted);">Date</span><div style="font-weight:500;">{{ booking.interview_date }}</div></div>
+                    <div><span style="font-size:11px;color:var(--c-text-muted);">Time</span><div style="font-weight:500;">{{ booking.start_time }} – {{ booking.end_time }}</div></div>
+                    <div><span style="font-size:11px;color:var(--c-text-muted);">HR Name</span><div style="font-weight:500;">{{ booking.hr_name or '—' }}</div></div>
+                    <div><span style="font-size:11px;color:var(--c-text-muted);">HR Number</span><div style="font-weight:500;">{{ booking.hr_number or '—' }}</div></div>
+                </div>
+            </div>
+
+            <form action="{{ url_for('main.complete_interview_route', booking_id=booking.id) }}" method="POST">
+                <div class="form-group">
+                    <label for="feedback">Interview Feedback <span style="color:var(--c-danger);">*</span></label>
+                    <textarea class="form-control" id="feedback" name="feedback" rows="4" required
+                              placeholder="Describe the candidate's performance, strengths, and areas of improvement…"></textarea>
+                </div>
+                <div class="form-group">
+                    <label for="result">Final Result <span style="color:var(--c-danger);">*</span></label>
+                    <select class="form-select" id="result" name="result" required>
+                        <option value="">— Select Result —</option>
+                        <option value="Selected">Selected</option>
+                        <option value="Rejected">Rejected</option>
+                        <option value="On Hold">On Hold</option>
+                    </select>
+                </div>
+                <div style="display:flex;gap:12px;margin-top:8px;">
+                    <button type="submit" class="btn btn-success">
+                        <i class="bi bi-check-circle"></i> Complete Interview
+                    </button>
+                    <a href="{{ url_for('main.hr_dashboard') }}" class="btn btn-secondary">Cancel</a>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+</div>
+{% endblock %}

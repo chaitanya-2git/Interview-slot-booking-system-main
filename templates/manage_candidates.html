@@ -1,0 +1,119 @@
+{% extends "base.html" %}
+{% block content %}
+<div class="standalone-page" style="padding:var(--sp-8) var(--sp-6);">
+<div style="max-width:1100px;margin:0 auto;">
+
+    <div class="page-header">
+        <div>
+            <div class="page-greeting">Manage Candidates</div>
+            <div class="page-meta">View, edit, and manage all candidate accounts.</div>
+        </div>
+        <div style="display:flex;gap:12px;align-items:center;">
+            <a href="{{ url_for('main.create_candidate') }}" class="btn btn-primary">
+                <i class="bi bi-person-plus"></i> Add Candidate
+            </a>
+            <a href="{{ url_for('main.hr_dashboard') }}" class="btn btn-secondary">
+                <i class="bi bi-arrow-left"></i> Dashboard
+            </a>
+        </div>
+    </div>
+
+    <div class="panel">
+        <div class="table-toolbar">
+            <span class="panel-title">All Candidates ({{ candidates|length }})</span>
+            <div class="table-search">
+                <i class="bi bi-search"></i>
+                <input type="text" id="candidateSearch" placeholder="Search by name or email…">
+            </div>
+        </div>
+        <div class="table-responsive">
+            <table class="table table-hover" id="candidatesTable">
+                <thead>
+                    <tr>
+                        <th>Candidate</th>
+                        <th>Email</th>
+                        <th>Status</th>
+                        <th>Actions</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for candidate in candidates %}
+                    <tr>
+                        <td>
+                            <div class="candidate-cell">
+                                <div class="cell-avatar">{{ candidate.name[0] if candidate.name else '?' }}</div>
+                                <div>
+                                    <div class="cell-name">{{ candidate.name }}</div>
+                                    <div class="cell-sub">#{{ candidate.id }}</div>
+                                </div>
+                            </div>
+                        </td>
+                        <td style="color:var(--c-text-secondary);">{{ candidate.email }}</td>
+                        <td>
+                            {% if candidate.is_active == 1 %}
+                                <span class="badge bg-success">Active</span>
+                            {% else %}
+                                <span class="badge bg-danger">Inactive</span>
+                            {% endif %}
+                        </td>
+                        <td>
+                            <div class="action-menu">
+                                <a href="{{ url_for('main.candidate_history', user_id=candidate.id) }}"
+                                   class="action-icon-btn" title="View history">
+                                    <i class="bi bi-clock-history"></i>
+                                </a>
+                                <a href="{{ url_for('main.edit_candidate', user_id=candidate.id) }}"
+                                   class="action-icon-btn" title="Edit candidate">
+                                    <i class="bi bi-pencil"></i>
+                                </a>
+                                <form action="{{ url_for('main.toggle_candidate_status', user_id=candidate.id) }}"
+                                      method="POST" style="display:inline;">
+                                    <button type="submit"
+                                            class="action-icon-btn {% if candidate.is_active == 1 %}danger{% else %}success{% endif %}"
+                                            title="{% if candidate.is_active == 1 %}Deactivate{% else %}Activate{% endif %}">
+                                        <i class="bi bi-{% if candidate.is_active == 1 %}pause{% else %}play{% endif %}-circle"></i>
+                                    </button>
+                                </form>
+                                <a href="{{ url_for('main.reset_candidate_password', user_id=candidate.id) }}"
+                                   class="action-icon-btn" title="Reset password">
+                                    <i class="bi bi-key"></i>
+                                </a>
+                            </div>
+                        </td>
+                    </tr>
+                    {% else %}
+                    <tr>
+                        <td colspan="4">
+                            <div class="empty-state">
+                                <div class="empty-state-icon"><i class="bi bi-people"></i></div>
+                                <div class="empty-state-title">No candidates yet</div>
+                                <div class="empty-state-sub">Create a candidate account to get started.</div>
+                                <a href="{{ url_for('main.create_candidate') }}" class="btn btn-primary">
+                                    <i class="bi bi-person-plus"></i> Add Candidate
+                                </a>
+                            </div>
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+
+</div>
+</div>
+{% endblock %}
+
+{% block extra_scripts %}
+<script>
+var search = document.getElementById('candidateSearch');
+if (search) {
+    search.addEventListener('input', function() {
+        var val = this.value.toLowerCase();
+        document.querySelectorAll('#candidatesTable tbody tr').forEach(function(row) {
+            row.style.display = row.textContent.toLowerCase().includes(val) ? '' : 'none';
+        });
+    });
+}
+</script>
+{% endblock %}

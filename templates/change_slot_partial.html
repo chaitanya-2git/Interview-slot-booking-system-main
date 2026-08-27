@@ -1,0 +1,25 @@
+<form method="POST" action="{{ url_for('main.candidate_change_slot', booking_id=booking.id) }}" id="changeSlotForm">
+    <div class="form-group">
+        <label class="form-label" for="rescheduleDate">Select New Date</label>
+        <input type="date"
+               id="rescheduleDate"
+               name="interview_date"
+               class="form-control"
+               value="{{ booking.interview_date }}">
+    </div>
+
+    <div id="slotsContainer" style="margin-bottom:16px;">
+        <div style="font-size:13px;color:var(--c-text-muted);">Select a date above to see available slots.</div>
+    </div>
+
+    <input type="hidden" id="selectedSlotId" name="new_slot_id" required>
+
+    <div style="display:flex;gap:12px;">
+        <button type="submit" class="btn btn-primary" id="confirmChangeBtn" disabled>
+            <i class="bi bi-check-circle"></i> Confirm Change
+        </button>
+        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">
+            Cancel
+        </button>
+    </div>
+</form>
