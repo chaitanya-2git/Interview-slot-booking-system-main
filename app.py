@@ -1,9 +1,10 @@
+import os
 from flask import Flask
 from routes import app_routes
 from database import create_tables, initialize_default_licenses_and_slots, create_default_hr_account
 
 app = Flask(__name__)
-app.secret_key = "your-secret-key-here"
+app.secret_key = os.environ.get("SECRET_KEY", "your-secret-key-here")
 
 # Create the database tables
 create_tables()
@@ -26,5 +27,5 @@ if default_hr:
 app.register_blueprint(app_routes)
 
 if __name__ == "__main__":
-    app.run(debug=True)
-    
+    port = int(os.environ.get("PORT", 5000))
+    app.run(host="0.0.0.0", port=port, debug=False)
