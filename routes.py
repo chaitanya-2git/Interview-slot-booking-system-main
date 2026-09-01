@@ -22,33 +22,9 @@ from database import (
 
 app_routes = Blueprint('main', __name__)
 
-@app_routes.route('/', methods=['GET', 'POST'])
+@app_routes.route('/', methods=['GET'])
 def home():
-    if request.method == 'POST':
-        email = request.form['email']
-        password = request.form['password']
-        
-        user = login_user(email, password)
-        
-        if user:
-            session['user_id'] = user['id']
-            session['user_name'] = user['name']
-            session['user_role'] = user['role']
-            
-            # Check if user needs to change password
-            force_password_change = user['force_password_change'] if 'force_password_change' in user else 0
-            if force_password_change == 1:
-                flash('You must change your password before continuing.', 'info')
-                return redirect(url_for('main.change_password'))
-            
-            if user['role'] == 'hr':
-                return redirect(url_for('main.hr_dashboard'))
-            else:
-                return redirect(url_for('main.candidate_dashboard'))
-        else:
-            flash('Invalid email or password or account is inactive.', 'error')
-    
-    return render_template('index.html')
+    return redirect(url_for('main.login'))
 
 @app_routes.route('/register', methods=['GET', 'POST'])
 def register():

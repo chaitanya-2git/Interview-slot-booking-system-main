@@ -7,11 +7,7 @@
 ══════════════════════════════════════════════ -->
 <aside class="sidebar" id="sidebar">
     <a href="{{ url_for('main.candidate_dashboard') }}" class="sidebar-logo">
-        <img src="{{ url_for('static', filename='images/blujay_logo.jpg') }}" alt="BluJay">
-        <div class="sidebar-logo-text">
-            <span class="sidebar-logo-name">BluJay</span>
-            <div class="sidebar-logo-sub">Technologies</div>
-        </div>
+        <span class="sidebar-brand-name">BluJay Technologies</span>
     </a>
 
     <div class="sidebar-user">
@@ -57,14 +53,11 @@
      TOP HEADER
 ══════════════════════════════════════════════ -->
 <header class="top-header">
-    <div style="display:flex;align-items:center;gap:12px;">
+    <div class="top-header-left">
         <button class="sidebar-toggle" id="sidebarToggle">
             <i class="bi bi-list"></i>
         </button>
-        <div>
-            <div class="header-title" id="headerTitle">BluJay Technologies</div>
-            <div class="header-subtitle">Interview Management</div>
-        </div>
+        <span class="mobile-header-brand">BluJay Technologies</span>
     </div>
     <div class="header-actions">
         <button class="btn btn-primary btn-sm candidate-nav-link" data-section="available-slots">
@@ -80,392 +73,403 @@
      MAIN CONTENT
 ══════════════════════════════════════════════ -->
 <main class="main-content">
-<div class="content-area">
+    <div class="content-area">
 
-    <!-- ── DASHBOARD SECTION ── -->
-    <div id="section-dashboard" class="content-section active">
-        <div class="page-header">
-            <div>
-                <div class="page-greeting">Welcome back, {{ user_name }} 👋</div>
-                <div class="page-meta">Manage and track your interview schedule.</div>
-            </div>
-            <button class="btn btn-primary candidate-nav-link" data-section="available-slots">
-                <i class="bi bi-plus"></i> Book Interview
-            </button>
-        </div>
-        <!-- Next interview highlight -->
-        {% if user_bookings %}
-        {% set next = user_bookings[0] %}
-        {% if next.booking_status == 'confirmed' %}
-        <div class="next-interview-card">
-            <div class="ni-header">
-                <h3 style="font-size:22px; font-weight:700; color:var(--c-text-primary); margin:0;">Next Interview</h3>
-                <span class="badge bg-success">Confirmed</span>
-            </div>
-            <div class="ni-datetime" style="font-size:18px; font-weight:600; color:var(--c-accent); margin-bottom:8px;">
-                {{ next.interview_date }} &middot; {{ next.start_time }}
-            </div>
-            <div class="ni-role" style="font-size:16px; font-weight:600; color:var(--c-text-primary); margin-bottom:4px;">
-                {{ next.technology or 'Technical' }} Developer — {{ next.interview_round or 'Technical' }} Round
-            </div>
-            <div class="ni-company" style="font-size:14px; color:var(--c-text-secondary); margin-bottom:20px;">
-                Company: {{ next.company_name or 'BluJay Technologies' }}
-            </div>
-            <div class="ni-actions" style="display:flex; gap:12px; flex-wrap:wrap;">
-                <button class="btn btn-primary candidate-nav-link" data-section="my-bookings">
-                    <i class="bi bi-eye"></i> View Interview
-                </button>
-                <button class="btn btn-secondary change-slot-btn"
-                        data-bs-toggle="modal"
-                        data-bs-target="#changeSlotModal"
-                        data-booking-id="{{ next.id }}"
-                        data-current-slot="{{ next.start_time }} - {{ next.end_time }}"
-                        data-current-license="{{ next.license_name }}"
-                        data-interview-date="{{ next.interview_date }}">
-                    <i class="bi bi-calendar-event"></i> Change Slot
-                </button>
-                <form action="{{ url_for('main.candidate_cancel_booking_route', booking_id=next.id) }}" method="POST" onsubmit="return confirm('Cancel this booking?')">
-                    <button type="submit" class="btn btn-outline-secondary" style="color:var(--c-danger); border-color:#FECACA;">
-                        <i class="bi bi-x-circle"></i> Cancel Booking
-                    </button>
-                </form>
-            </div>
-        </div>
-        {% endif %}
-        {% endif %}
-
-
-        <!-- KPI row -->
-        <div class="kpi-row">
-            <div class="kpi-block">
-                <div class="kpi-icon"><i class="bi bi-calendar-check"></i></div>
-                <div class="kpi-value">{{ stats.total_bookings if stats else '—' }}</div>
-                <div class="kpi-label">Total Bookings</div>
-            </div>
-            <div class="kpi-block">
-                <div class="kpi-icon"><i class="bi bi-clock"></i></div>
-                <div class="kpi-value">{{ stats.upcoming_interviews if stats else '—' }}</div>
-                <div class="kpi-label">Upcoming</div>
-            </div>
-            <div class="kpi-block">
-                <div class="kpi-icon"><i class="bi bi-check-circle"></i></div>
-                <div class="kpi-value">{{ stats.completed_interviews if stats else '—' }}</div>
-                <div class="kpi-label">Completed</div>
-            </div>
-            <div class="kpi-block">
-                <div class="kpi-icon"><i class="bi bi-x-circle"></i></div>
-                <div class="kpi-value">{{ stats.cancelled_bookings if stats else '—' }}</div>
-                <div class="kpi-label">Cancelled</div>
-            </div>
-        </div>
-
-
-
-        <!-- Quick actions -->
-        <div class="panel">
-            <div class="panel-header"><span class="panel-title">Quick Actions</span></div>
-            <div class="panel-body" style="display:flex;gap:12px;flex-wrap:wrap;">
-                <button class="btn btn-secondary candidate-nav-link" data-section="available-slots">
-                    <i class="bi bi-calendar-plus"></i> Book New Slot
-                </button>
-                <button class="btn btn-secondary candidate-nav-link" data-section="my-bookings">
-                    <i class="bi bi-list-check"></i> My Bookings
-                </button>
-                <button class="btn btn-secondary candidate-nav-link" data-section="previous-status">
-                    <i class="bi bi-clock-history"></i> Interview History
-                </button>
-            </div>
-        </div>
-    </div>
-
-    <!-- ── AVAILABLE SLOTS (BOOK INTERVIEW) SECTION ── -->
-    <div id="section-available-slots" class="content-section">
-        <div class="dashboard-header">
-            <h2>Book Interview Slot</h2>
-        </div>
-
-        <div class="panel">
-            <div class="panel-header">
-                <span class="panel-title">Select a Date &amp; Time Slot</span>
-            </div>
-            <div class="panel-body">
-                <div class="form-group" style="max-width:280px;margin-bottom:20px;">
-                    <label for="interviewDateSelector">Interview Date</label>
-                    <input type="date" id="interviewDateSelector" class="form-control">
-                    <div style="font-size:11px;color:var(--c-text-muted);margin-top:4px;">
-                        Select a date to see available slots
-                    </div>
+        <!-- ── DASHBOARD SECTION ── -->
+        <div id="section-dashboard" class="content-section active">
+            <div class="page-header">
+                <div>
+                    <div class="page-greeting">Welcome back, {{ user_name }}</div>
+                    <div class="page-meta">Manage and track your interview schedule.</div>
                 </div>
-                <div class="table-responsive">
-                    <table class="table table-hover" id="availableSlotsTable">
-                        <thead>
-                            <tr>
-                                <th>Availability</th>
-                                <th>Date</th>
-                                <th>Start</th>
-                                <th>End</th>
-                                <th>Action</th>
-                            </tr>
-                        </thead>
-                        <tbody>
-                            {% if time_blocks %}
-                            {% for block in time_blocks %}
-                            <tr>
-                                <td>
-                                    {% if block.available > 0 %}
+                <button class="btn btn-primary candidate-nav-link" data-section="available-slots">
+                    <i class="bi bi-plus-lg"></i> Book Interview
+                </button>
+            </div>
+            <!-- Next interview highlight -->
+            {% if user_bookings %}
+            {% set next = user_bookings[0] %}
+            {% if next.booking_status == 'confirmed' %}
+            <div class="next-interview-card">
+                <div class="ni-header">
+                    <span class="ni-eyebrow">Next Interview</span>
+                    <span class="ni-status-pill">Confirmed</span>
+                </div>
+                <div class="ni-datetime">{{ next.interview_date }} &middot; {{ next.start_time }}</div>
+                <div class="ni-role">{{ next.technology or 'Technical' }} — {{ next.interview_round or 'Technical' }} Round</div>
+                <div class="ni-company">{{ next.company_name or 'BluJay Technologies' }}</div>
+                <div class="ni-actions">
+                    <button class="ni-btn ni-btn-primary candidate-nav-link" data-section="my-bookings">
+                        <i class="bi bi-eye"></i> View Details
+                    </button>
+                    <button class="ni-btn ni-btn-secondary change-slot-btn" data-bs-toggle="modal"
+                        data-bs-target="#changeSlotModal" data-booking-id="{{ next.id }}"
+                        data-current-slot="{{ next.start_time }} - {{ next.end_time }}"
+                        data-current-license="{{ next.license_name }}" data-interview-date="{{ next.interview_date }}">
+                        <i class="bi bi-calendar-event"></i> Change Slot
+                    </button>
+                    <form action="{{ url_for('main.candidate_cancel_booking_route', booking_id=next.id) }}"
+                        method="POST" onsubmit="return confirm('Cancel this booking?')" style="display:inline;">
+                        <button type="submit" class="ni-btn ni-btn-danger">
+                            <i class="bi bi-x-circle"></i> Cancel
+                        </button>
+                    </form>
+                </div>
+            </div>
+            {% endif %}
+            {% endif %}
+
+            <!-- KPI row -->
+            <div class="kpi-row">
+                <div class="kpi-block">
+                    <div class="kpi-top">
+                        <span class="kpi-label">Total Bookings</span>
+                        <i class="bi bi-calendar-check kpi-icon"></i>
+                    </div>
+                    <div class="kpi-value">{{ stats.total_bookings if stats else '0' }}</div>
+                    <div class="kpi-meta">All time</div>
+                </div>
+                <div class="kpi-block">
+                    <div class="kpi-top">
+                        <span class="kpi-label">Upcoming</span>
+                        <i class="bi bi-clock kpi-icon"></i>
+                    </div>
+                    <div class="kpi-value">{{ stats.upcoming_interviews if stats else '0' }}</div>
+                    <div class="kpi-meta">Confirmed</div>
+                </div>
+                <div class="kpi-block">
+                    <div class="kpi-top">
+                        <span class="kpi-label">Completed</span>
+                        <i class="bi bi-check-circle kpi-icon"></i>
+                    </div>
+                    <div class="kpi-value">{{ stats.completed_interviews if stats else '0' }}</div>
+                    <div class="kpi-meta">Finished</div>
+                </div>
+                <div class="kpi-block">
+                    <div class="kpi-top">
+                        <span class="kpi-label">Cancelled</span>
+                        <i class="bi bi-x-circle kpi-icon"></i>
+                    </div>
+                    <div class="kpi-value">{{ stats.cancelled_bookings if stats else '0' }}</div>
+                    <div class="kpi-meta">Revoked</div>
+                </div>
+            </div>
+
+
+
+            <!-- Quick actions -->
+            <div class="panel">
+                <div class="panel-header"><span class="panel-title">Quick Actions</span></div>
+                <div class="panel-body" style="display:flex;gap:12px;flex-wrap:wrap;">
+                    <button class="btn btn-secondary candidate-nav-link" data-section="available-slots">
+                        <i class="bi bi-calendar-plus"></i> Book New Slot
+                    </button>
+                    <button class="btn btn-secondary candidate-nav-link" data-section="my-bookings">
+                        <i class="bi bi-list-check"></i> My Bookings
+                    </button>
+                    <button class="btn btn-secondary candidate-nav-link" data-section="previous-status">
+                        <i class="bi bi-clock-history"></i> Interview History
+                    </button>
+                </div>
+            </div>
+        </div>
+
+        <!-- ── AVAILABLE SLOTS (BOOK INTERVIEW) SECTION ── -->
+        <div id="section-available-slots" class="content-section">
+            <div class="dashboard-header">
+                <h2>Book Interview Slot</h2>
+            </div>
+
+            <div class="panel">
+                <div class="panel-header">
+                    <span class="panel-title">Select a Date &amp; Time Slot</span>
+                </div>
+                <div class="panel-body">
+                    <div class="form-group" style="max-width:280px;margin-bottom:20px;">
+                        <label for="interviewDateSelector">Interview Date</label>
+                        <input type="date" id="interviewDateSelector" class="form-control">
+                        <div style="font-size:11px;color:var(--c-text-muted);margin-top:4px;">
+                            Select a date to see available slots
+                        </div>
+                    </div>
+                    <div class="table-responsive">
+                        <table class="table table-hover" id="availableSlotsTable">
+                            <thead>
+                                <tr>
+                                    <th>Availability</th>
+                                    <th>Date</th>
+                                    <th>Start</th>
+                                    <th>End</th>
+                                    <th>Action</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% if time_blocks %}
+                                {% for block in time_blocks %}
+                                <tr>
+                                    <td data-label="Availability">
+                                        {% if block.available > 0 %}
                                         <span class="badge bg-success">{{ block.available }} slot(s) available</span>
-                                    {% else %}
+                                        {% else %}
                                         <span class="badge bg-danger">🔴 Fully Booked</span>
-                                    {% endif %}
-                                </td>
-                                <td>{{ block.interview_date }}</td>
-                                <td>{{ block.start_time }}</td>
-                                <td>{{ block.end_time }}</td>
-                                <td>
-                                    {% if block.available > 0 %}
-                                    <button type="button" class="btn btn-primary btn-sm book-slot-btn"
-                                            data-bs-toggle="modal"
-                                            data-bs-target="#bookingModal"
+                                        {% endif %}
+                                    </td>
+                                    <td data-label=\Date\>{{ block.interview_date }}</td>
+                                    <td data-label=\Start Time\>{{ block.start_time }}</td>
+                                    <td data-label=\End Time\>{{ block.end_time }}</td>
+                                    <td data-label="Availability">
+                                        {% if block.available > 0 %}
+                                        <button type="button" class="btn btn-primary btn-sm book-slot-btn"
+                                            data-bs-toggle="modal" data-bs-target="#bookingModal"
                                             data-slot-date="{{ block.interview_date }}"
                                             data-slot-start="{{ block.start_time }}"
                                             data-slot-end="{{ block.end_time }}">
-                                        Book
-                                    </button>
+                                            Book
+                                        </button>
+                                        {% else %}
+                                        <button type="button" class="btn btn-secondary btn-sm" disabled>
+                                            Book
+                                        </button>
+                                        {% endif %}
+                                    </td>
+                                </tr>
+                                {% endfor %}
+                                {% else %}
+                                <tr>
+                                    <td colspan="5">
+                                        <div class="empty-state">
+                                            <div class="empty-state-icon"><i class="bi bi-calendar"></i></div>
+                                            <div class="empty-state-title">Select a date above</div>
+                                            <div class="empty-state-sub">Available slots for the chosen date will appear
+                                                here.</div>
+                                        </div>
+                                    </td>
+                                </tr>
+                                {% endif %}
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- ── MY BOOKINGS SECTION ── -->
+        <div id="section-my-bookings" class="content-section">
+            <div class="dashboard-header">
+                <h2>My Bookings</h2>
+            </div>
+
+            <div class="panel">
+                <div class="panel-header">
+                    <span class="panel-title">Interview Schedule</span>
+                </div>
+                {% if user_bookings %}
+                <div class="table-responsive">
+                    <table class="table table-hover">
+                        <thead>
+                            <tr>
+                                <th>Company</th>
+                                <th>Technology</th>
+                                <th>Round</th>
+                                <th>License</th>
+                                <th>Date</th>
+                                <th>Time</th>
+                                <th>Status</th>
+                                <th>Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for booking in user_bookings %}
+                            <tr>
+                                <td style="font-weight:500;">{{ booking.company_name or '—' }}</td>
+                                <td data-label="Technology">{{ booking.technology or '—' }}</td>
+                                <td data-label="Round">{{ booking.interview_round or '—' }}</td>
+                                <td data-label="License"><span class="badge bg-secondary">{{ booking.license_name
+                                        }}</span></td>
+                                <td data-label="Date" style="white-space:nowrap;">{{ booking.interview_date }}</td>
+                                <td data-label="Time" style="white-space:nowrap;">{{ booking.start_time }} – {{
+                                    booking.end_time }}</td>
+                                <td data-label="Status">
+                                    {% if booking.booking_status == 'confirmed' %}
+                                    <span class="badge bg-success">Confirmed</span>
+                                    {% elif booking.booking_status == 'cancelled' %}
+                                    <span class="badge bg-danger">Cancelled</span>
+                                    {% elif booking.booking_status == 'completed' %}
+                                    <span class="badge bg-info">Completed</span>
                                     {% else %}
-                                    <button type="button" class="btn btn-secondary btn-sm" disabled>
-                                        Book
-                                    </button>
+                                    <span class="badge bg-secondary">{{ booking.booking_status }}</span>
+                                    {% endif %}
+                                    {% if booking.interview_result %}
+                                    <div style="margin-top:4px;font-size:11px;color:var(--c-text-muted);">Result: {{
+                                        booking.interview_result }}</div>
                                     {% endif %}
                                 </td>
-                            </tr>
-                            {% endfor %}
-                            {% else %}
-                            <tr>
-                                <td colspan="5">
-                                    <div class="empty-state">
-                                        <div class="empty-state-icon"><i class="bi bi-calendar"></i></div>
-                                        <div class="empty-state-title">Select a date above</div>
-                                        <div class="empty-state-sub">Available slots for the chosen date will appear here.</div>
+                                <td data-label="Actions">
+                                    <div class="action-menu">
+                                        {% if booking.booking_status == 'confirmed' %}
+                                        <button type="button" class="action-icon-btn change-slot-btn"
+                                            data-bs-toggle="modal" data-bs-target="#changeSlotModal"
+                                            data-booking-id="{{ booking.id }}"
+                                            data-current-slot="{{ booking.start_time }} - {{ booking.end_time }}"
+                                            data-current-license="{{ booking.license_name }}"
+                                            data-interview-date="{{ booking.interview_date }}" title="Change slot">
+                                            <i class="bi bi-calendar-event"></i>
+                                        </button>
+                                        <form
+                                            action="{{ url_for('main.candidate_cancel_booking_route', booking_id=booking.id) }}"
+                                            method="POST" style="display:inline;"
+                                            onsubmit="return confirm('Are you sure you want to cancel this booking?')">
+                                            <button type="submit" class="action-icon-btn danger" title="Cancel">
+                                                <i class="bi bi-x-circle"></i>
+                                            </button>
+                                        </form>
+                                        {% endif %}
                                     </div>
                                 </td>
                             </tr>
-                            {% endif %}
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+                {% else %}
+                <div class="empty-state">
+                    <div class="empty-state-icon"><i class="bi bi-calendar-x"></i></div>
+                    <div class="empty-state-title">No bookings yet</div>
+                    <div class="empty-state-sub">You haven't booked any interview slots yet.</div>
+                    <button class="btn btn-primary candidate-nav-link" data-section="available-slots">
+                        <i class="bi bi-plus"></i> Book a Slot
+                    </button>
+                </div>
+                {% endif %}
+            </div>
+        </div>
+
+        <!-- ── PREVIOUS INTERVIEW STATUS SECTION ── -->
+        <div id="section-previous-status" class="content-section">
+            <div class="dashboard-header">
+                <h2>Interview History</h2>
+            </div>
+
+            <!-- Add history form -->
+            <div class="panel" style="margin-bottom:20px;">
+                <div class="panel-header">
+                    <span class="panel-title">Add Previous Interview</span>
+                </div>
+                <div class="panel-body">
+                    <form action="{{ url_for('main.add_previous_history_route') }}" method="POST">
+                        <div style="display:grid;grid-template-columns:1fr 1fr;gap:16px;">
+                            <div class="form-group">
+                                <label for="hist_company_name">Company Name <span
+                                        style="color:var(--c-danger);">*</span></label>
+                                <input type="text" class="form-control" id="hist_company_name" name="company_name"
+                                    required placeholder="e.g. Acme Corp">
+                            </div>
+                            <div class="form-group">
+                                <label for="hist_interview_round">Interview Round <span
+                                        style="color:var(--c-danger);">*</span></label>
+                                <select class="form-select" id="hist_interview_round" name="interview_round" required>
+                                    <option value="">— Select Round —</option>
+                                    <option value="L1">L1</option>
+                                    <option value="L2">L2</option>
+                                    <option value="L3">L3</option>
+                                    <option value="Client Round">Client Round</option>
+                                    <option value="Manager Round">Manager Round</option>
+                                    <option value="HR Round">HR Round</option>
+                                </select>
+                            </div>
+                            <div class="form-group">
+                                <label for="hist_interview_date">Interview Date <span
+                                        style="color:var(--c-danger);">*</span></label>
+                                <input type="date" class="form-control" id="hist_interview_date" name="interview_date"
+                                    required>
+                            </div>
+                            <div class="form-group">
+                                <label for="hist_result">Result <span style="color:var(--c-danger);">*</span></label>
+                                <select class="form-select" id="hist_result" name="result" required>
+                                    <option value="">— Select Result —</option>
+                                    <option value="Selected">Selected</option>
+                                    <option value="Rejected">Rejected</option>
+                                    <option value="Waiting">Waiting</option>
+                                </select>
+                            </div>
+                        </div>
+                        <div class="form-group">
+                            <label for="hist_remarks">Remarks</label>
+                            <textarea class="form-control" id="hist_remarks" name="remarks" rows="2"
+                                placeholder="Optional notes…"></textarea>
+                        </div>
+                        <button type="submit" class="btn btn-primary">
+                            <i class="bi bi-plus-circle"></i> Add Record
+                        </button>
+                    </form>
+                </div>
+            </div>
+
+            <!-- History table -->
+            {% if previous_history %}
+            <div class="panel">
+                <div class="panel-header">
+                    <span class="panel-title">Past Interviews</span>
+                </div>
+                <div class="table-responsive">
+                    <table class="table table-hover">
+                        <thead>
+                            <tr>
+                                <th>Company</th>
+                                <th>Round</th>
+                                <th>Date</th>
+                                <th>Result</th>
+                                <th>Remarks</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for history in previous_history %}
+                            <tr>
+                                <td style="font-weight:500;">{{ history.company_name }}</td>
+                                <td>{{ history.interview_round }}</td>
+                                <td>{{ history.interview_date }}</td>
+                                <td>
+                                    {% if history.result == 'Selected' %}
+                                    <span class="badge bg-success">Selected</span>
+                                    {% elif history.result == 'Rejected' %}
+                                    <span class="badge bg-danger">Rejected</span>
+                                    {% else %}
+                                    <span class="badge bg-warning">{{ history.result }}</span>
+                                    {% endif %}
+                                </td>
+                                <td>{{ history.remarks or '—' }}</td>
+                            </tr>
+                            {% endfor %}
                         </tbody>
                     </table>
                 </div>
             </div>
-        </div>
-    </div>
-
-    <!-- ── MY BOOKINGS SECTION ── -->
-    <div id="section-my-bookings" class="content-section">
-        <div class="dashboard-header">
-            <h2>My Bookings</h2>
-        </div>
-
-        <div class="panel">
-            <div class="panel-header">
-                <span class="panel-title">Interview Schedule</span>
-            </div>
-            {% if user_bookings %}
-            <div class="table-responsive">
-                <table class="table table-hover">
-                    <thead>
-                        <tr>
-                            <th>Company</th>
-                            <th>Technology</th>
-                            <th>Round</th>
-                            <th>License</th>
-                            <th>Date</th>
-                            <th>Time</th>
-                            <th>Status</th>
-                            <th>Actions</th>
-                        </tr>
-                    </thead>
-                    <tbody>
-                        {% for booking in user_bookings %}
-                        <tr>
-                            <td style="font-weight:500;">{{ booking.company_name or '—' }}</td>
-                            <td data-label="Technology">{{ booking.technology or '—' }}</td>
-                            <td data-label="Round">{{ booking.interview_round or '—' }}</td>
-                            <td data-label="License"><span class="badge bg-secondary">{{ booking.license_name }}</span></td>
-                            <td data-label="Date" style="white-space:nowrap;">{{ booking.interview_date }}</td>
-                            <td data-label="Time" style="white-space:nowrap;">{{ booking.start_time }} – {{ booking.end_time }}</td>
-                            <td data-label="Status">
-                                {% if booking.booking_status == 'confirmed' %}
-                                    <span class="badge bg-success">Confirmed</span>
-                                {% elif booking.booking_status == 'cancelled' %}
-                                    <span class="badge bg-danger">Cancelled</span>
-                                {% elif booking.booking_status == 'completed' %}
-                                    <span class="badge bg-info">Completed</span>
-                                {% else %}
-                                    <span class="badge bg-secondary">{{ booking.booking_status }}</span>
-                                {% endif %}
-                                {% if booking.interview_result %}
-                                <div style="margin-top:4px;font-size:11px;color:var(--c-text-muted);">Result: {{ booking.interview_result }}</div>
-                                {% endif %}
-                            </td>
-                            <td data-label="Actions">
-                                <div class="action-menu">
-                                    {% if booking.booking_status == 'confirmed' %}
-                                    <button type="button"
-                                            class="action-icon-btn change-slot-btn"
-                                            data-bs-toggle="modal"
-                                            data-bs-target="#changeSlotModal"
-                                            data-booking-id="{{ booking.id }}"
-                                            data-current-slot="{{ booking.start_time }} - {{ booking.end_time }}"
-                                            data-current-license="{{ booking.license_name }}"
-                                            data-interview-date="{{ booking.interview_date }}"
-                                            title="Change slot">
-                                        <i class="bi bi-calendar-event"></i>
-                                    </button>
-                                    <form action="{{ url_for('main.candidate_cancel_booking_route', booking_id=booking.id) }}" method="POST" style="display:inline;"
-                                          onsubmit="return confirm('Are you sure you want to cancel this booking?')">
-                                        <button type="submit" class="action-icon-btn danger" title="Cancel">
-                                            <i class="bi bi-x-circle"></i>
-                                        </button>
-                                    </form>
-                                    {% endif %}
-                                </div>
-                            </td>
-                        </tr>
-                        {% endfor %}
-                    </tbody>
-                </table>
-            </div>
-            {% else %}
-            <div class="empty-state">
-                <div class="empty-state-icon"><i class="bi bi-calendar-x"></i></div>
-                <div class="empty-state-title">No bookings yet</div>
-                <div class="empty-state-sub">You haven't booked any interview slots yet.</div>
-                <button class="btn btn-primary candidate-nav-link" data-section="available-slots">
-                    <i class="bi bi-plus"></i> Book a Slot
-                </button>
-            </div>
-            {% endif %}
-        </div>
-    </div>
-
-    <!-- ── PREVIOUS INTERVIEW STATUS SECTION ── -->
-    <div id="section-previous-status" class="content-section">
-        <div class="dashboard-header">
-            <h2>Interview History</h2>
-        </div>
-
-        <!-- Add history form -->
-        <div class="panel" style="margin-bottom:20px;">
-            <div class="panel-header">
-                <span class="panel-title">Add Previous Interview</span>
-            </div>
-            <div class="panel-body">
-                <form action="{{ url_for('main.add_previous_history_route') }}" method="POST">
-                    <div style="display:grid;grid-template-columns:1fr 1fr;gap:16px;">
-                        <div class="form-group">
-                            <label for="hist_company_name">Company Name <span style="color:var(--c-danger);">*</span></label>
-                            <input type="text" class="form-control" id="hist_company_name" name="company_name" required placeholder="e.g. Acme Corp">
-                        </div>
-                        <div class="form-group">
-                            <label for="hist_interview_round">Interview Round <span style="color:var(--c-danger);">*</span></label>
-                            <select class="form-select" id="hist_interview_round" name="interview_round" required>
-                                <option value="">— Select Round —</option>
-                                <option value="L1">L1</option>
-                                <option value="L2">L2</option>
-                                <option value="L3">L3</option>
-                                <option value="Client Round">Client Round</option>
-                                <option value="Manager Round">Manager Round</option>
-                                <option value="HR Round">HR Round</option>
-                            </select>
-                        </div>
-                        <div class="form-group">
-                            <label for="hist_interview_date">Interview Date <span style="color:var(--c-danger);">*</span></label>
-                            <input type="date" class="form-control" id="hist_interview_date" name="interview_date" required>
-                        </div>
-                        <div class="form-group">
-                            <label for="hist_result">Result <span style="color:var(--c-danger);">*</span></label>
-                            <select class="form-select" id="hist_result" name="result" required>
-                                <option value="">— Select Result —</option>
-                                <option value="Selected">Selected</option>
-                                <option value="Rejected">Rejected</option>
-                                <option value="Waiting">Waiting</option>
-                            </select>
-                        </div>
-                    </div>
-                    <div class="form-group">
-                        <label for="hist_remarks">Remarks</label>
-                        <textarea class="form-control" id="hist_remarks" name="remarks" rows="2" placeholder="Optional notes…"></textarea>
-                    </div>
-                    <button type="submit" class="btn btn-primary">
-                        <i class="bi bi-plus-circle"></i> Add Record
-                    </button>
-                </form>
-            </div>
-        </div>
-
-        <!-- History table -->
-        {% if previous_history %}
-        <div class="panel">
-            <div class="panel-header">
-                <span class="panel-title">Past Interviews</span>
-            </div>
-            <div class="table-responsive">
-                <table class="table table-hover">
-                    <thead>
-                        <tr>
-                            <th>Company</th>
-                            <th>Round</th>
-                            <th>Date</th>
-                            <th>Result</th>
-                            <th>Remarks</th>
-                        </tr>
-                    </thead>
-                    <tbody>
-                        {% for history in previous_history %}
-                        <tr>
-                            <td style="font-weight:500;">{{ history.company_name }}</td>
-                            <td>{{ history.interview_round }}</td>
-                            <td>{{ history.interview_date }}</td>
-                            <td>
-                                {% if history.result == 'Selected' %}
-                                    <span class="badge bg-success">Selected</span>
-                                {% elif history.result == 'Rejected' %}
-                                    <span class="badge bg-danger">Rejected</span>
-                                {% else %}
-                                    <span class="badge bg-warning">{{ history.result }}</span>
-                                {% endif %}
-                            </td>
-                            <td>{{ history.remarks or '—' }}</td>
-                        </tr>
-                        {% endfor %}
-                    </tbody>
-                </table>
-            </div>
-        </div>
-        {% endif %}
-    </div>
-
-    <!-- ── NOTIFICATIONS SECTION ── -->
-    <div id="section-notifications" class="content-section">
-        <div class="dashboard-header">
-            <h2>Notifications</h2>
-            {% if unread_count and unread_count > 0 %}
-            <span class="badge bg-danger">{{ unread_count }} unread</span>
             {% endif %}
         </div>
 
-        <div class="panel">
-            <div class="notification-list">
-                {% if notifications %}
+        <!-- ── NOTIFICATIONS SECTION ── -->
+        <div id="section-notifications" class="content-section">
+            <div class="dashboard-header">
+                <h2>Notifications</h2>
+                {% if unread_count and unread_count > 0 %}
+                <span class="badge bg-danger">{{ unread_count }} unread</span>
+                {% endif %}
+            </div>
+
+            <div class="panel">
+                <div class="notification-list">
+                    {% if notifications %}
                     {% for notif in notifications %}
                     <div class="notification-item {% if not notif.is_read %}unread{% endif %}">
                         <div class="notification-icon">
                             {% if 'booking' in notif.notification_type %}
-                                <i class="bi bi-calendar-check" style="color:var(--c-success);"></i>
+                            <i class="bi bi-calendar-check" style="color:var(--c-success);"></i>
                             {% elif 'cancel' in notif.notification_type %}
-                                <i class="bi bi-calendar-x" style="color:var(--c-danger);"></i>
+                            <i class="bi bi-calendar-x" style="color:var(--c-danger);"></i>
                             {% elif 'result' in notif.notification_type %}
-                                <i class="bi bi-award" style="color:var(--c-warning);"></i>
+                            <i class="bi bi-award" style="color:var(--c-warning);"></i>
                             {% else %}
-                                <i class="bi bi-bell" style="color:var(--c-text-muted);"></i>
+                            <i class="bi bi-bell" style="color:var(--c-text-muted);"></i>
                             {% endif %}
                         </div>
                         <div class="notification-content">
@@ -477,25 +481,27 @@
                         {% if not notif.is_read %}
                         <div class="notification-dot"></div>
                         {% endif %}
-                        <form action="{{ url_for('main.mark_notification_read_route', notification_id=notif.id) }}" method="POST" style="flex-shrink:0;">
-                            <button type="submit" class="action-icon-btn" title="Mark read" style="width:24px;height:24px;">
+                        <form action="{{ url_for('main.mark_notification_read_route', notification_id=notif.id) }}"
+                            method="POST" style="flex-shrink:0;">
+                            <button type="submit" class="action-icon-btn" title="Mark read"
+                                style="width:24px;height:24px;">
                                 <i class="bi bi-check"></i>
                             </button>
                         </form>
                     </div>
                     {% endfor %}
-                {% else %}
+                    {% else %}
                     <div class="empty-state">
                         <div class="empty-state-icon"><i class="bi bi-bell-slash"></i></div>
                         <div class="empty-state-title">No notifications</div>
                         <div class="empty-state-sub">You're all caught up!</div>
                     </div>
-                {% endif %}
+                    {% endif %}
+                </div>
             </div>
         </div>
-    </div>
 
-</div>
+    </div>
 </main>
 
 <!-- ══════════════════════════════════════════════
@@ -512,25 +518,35 @@
                 <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
             </div>
             <div class="modal-body">
-                <div style="background:var(--c-bg);border:1px solid var(--c-border);border-radius:6px;padding:12px 16px;margin-bottom:20px;font-size:13px;">
-                    <div style="font-size:11px;font-weight:600;color:var(--c-text-muted);text-transform:uppercase;letter-spacing:.5px;margin-bottom:4px;">Selected Slot</div>
+                <div
+                    style="background:var(--c-bg);border:1px solid var(--c-border);border-radius:6px;padding:12px 16px;margin-bottom:20px;font-size:13px;">
+                    <div
+                        style="font-size:11px;font-weight:600;color:var(--c-text-muted);text-transform:uppercase;letter-spacing:.5px;margin-bottom:4px;">
+                        Selected Slot</div>
                     <div id="slotDetails" style="font-weight:600;color:var(--c-text-primary);"></div>
                 </div>
-                <form id="bookingForm" method="POST">
-                    
+                <form id="bookingForm" method="POST" action="/book-slot">
+                    <input type="hidden" id="booking_interview_date" name="interview_date">
+                    <input type="hidden" id="booking_start_time" name="start_time">
                     <!-- TAB 1: Interview Details -->
                     <div id="bookingTab1">
-                        <h6 style="margin-bottom:16px;font-weight:600;color:var(--c-text-primary);">Step 1: Interview Details</h6>
+                        <h6 style="margin-bottom:16px;font-weight:600;color:var(--c-text-primary);">Step 1: Interview
+                            Details</h6>
                         <div class="form-group">
-                            <label for="booking_company_name">Company Name <span style="color:var(--c-danger);">*</span></label>
-                            <input type="text" class="form-control" id="booking_company_name" name="company_name" required placeholder="e.g. Infosys">
+                            <label for="booking_company_name">Company Name <span
+                                    style="color:var(--c-danger);">*</span></label>
+                            <input type="text" class="form-control" id="booking_company_name" name="company_name"
+                                required placeholder="e.g. Infosys">
                         </div>
                         <div class="form-group">
-                            <label for="booking_technology">Technology <span style="color:var(--c-danger);">*</span></label>
-                            <input type="text" class="form-control" id="booking_technology" name="technology" required placeholder="e.g. Java, Python, React">
+                            <label for="booking_technology">Technology <span
+                                    style="color:var(--c-danger);">*</span></label>
+                            <input type="text" class="form-control" id="booking_technology" name="technology" required
+                                placeholder="e.g. Java, Python, React">
                         </div>
                         <div class="form-group">
-                            <label for="booking_interview_round">Interview Round <span style="color:var(--c-danger);">*</span></label>
+                            <label for="booking_interview_round">Interview Round <span
+                                    style="color:var(--c-danger);">*</span></label>
                             <select class="form-select" id="booking_interview_round" name="interview_round" required>
                                 <option value="">— Select Round —</option>
                                 <option value="L1">L1</option>
@@ -543,20 +559,25 @@
                         </div>
                         <div class="form-group">
                             <label for="booking_remarks">Remarks</label>
-                            <textarea class="form-control" id="booking_remarks" name="remarks" rows="2" placeholder="Optional notes…"></textarea>
+                            <textarea class="form-control" id="booking_remarks" name="remarks" rows="2"
+                                placeholder="Optional notes…"></textarea>
                         </div>
                     </div>
 
                     <!-- TAB 2: HR Details -->
                     <div id="bookingTab2" style="display:none;">
-                        <h6 style="margin-bottom:16px;font-weight:600;color:var(--c-text-primary);">Step 2: HR Details</h6>
+                        <h6 style="margin-bottom:16px;font-weight:600;color:var(--c-text-primary);">Step 2: HR Details
+                        </h6>
                         <div class="form-group">
                             <label for="booking_hr_name">HR Name <span style="color:var(--c-danger);">*</span></label>
-                            <input type="text" class="form-control" id="booking_hr_name" name="hr_name" required placeholder="e.g. Jane Doe">
+                            <input type="text" class="form-control" id="booking_hr_name" name="hr_name" required
+                                placeholder="e.g. Jane Doe">
                         </div>
                         <div class="form-group">
-                            <label for="booking_hr_number">HR Number <span style="color:var(--c-danger);">*</span></label>
-                            <input type="text" class="form-control" id="booking_hr_number" name="hr_number" required placeholder="e.g. +1 234 567 8900">
+                            <label for="booking_hr_number">HR Number <span
+                                    style="color:var(--c-danger);">*</span></label>
+                            <input type="text" class="form-control" id="booking_hr_number" name="hr_number" required
+                                placeholder="e.g. +1 234 567 8900">
                         </div>
                     </div>
                 </form>
@@ -589,8 +610,11 @@
                 <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
             </div>
             <div class="modal-body">
-                <div style="background:var(--c-bg);border:1px solid var(--c-border);border-radius:6px;padding:12px 16px;margin-bottom:20px;font-size:13px;">
-                    <div style="font-size:11px;font-weight:600;color:var(--c-text-muted);text-transform:uppercase;letter-spacing:.5px;margin-bottom:4px;">Current Slot</div>
+                <div
+                    style="background:var(--c-bg);border:1px solid var(--c-border);border-radius:6px;padding:12px 16px;margin-bottom:20px;font-size:13px;">
+                    <div
+                        style="font-size:11px;font-weight:600;color:var(--c-text-muted);text-transform:uppercase;letter-spacing:.5px;margin-bottom:4px;">
+                        Current Slot</div>
                     <div id="currentSlotDetails" style="font-weight:600;color:var(--c-text-primary);"></div>
                 </div>
                 <div id="changeSlotFormContainer">
@@ -607,249 +631,251 @@
 
 {% block extra_scripts %}
 <script>
-document.addEventListener('DOMContentLoaded', function() {
+    document.addEventListener('DOMContentLoaded', function () {
 
-    // ── Sidebar section nav title updates ──
-    var sectionTitles = {
-        'dashboard': 'Dashboard',
-        'available-slots': 'Book Interview',
-        'my-bookings': 'My Bookings',
-        'previous-status': 'Interview History',
-        'notifications': 'Notifications'
-    };
-    document.querySelectorAll('.candidate-nav-link[data-section]').forEach(function(link) {
-        link.addEventListener('click', function() {
-            var ht = document.getElementById('headerTitle');
-            if (ht && sectionTitles[this.dataset.section]) ht.textContent = sectionTitles[this.dataset.section];
+        // ── Sidebar section nav title updates ──
+        var sectionTitles = {
+            'dashboard': 'Dashboard',
+            'available-slots': 'Book Interview',
+            'my-bookings': 'My Bookings',
+            'previous-status': 'Interview History',
+            'notifications': 'Notifications'
+        };
+        document.querySelectorAll('.candidate-nav-link[data-section]').forEach(function (link) {
+            link.addEventListener('click', function () {
+                var ht = document.getElementById('headerTitle');
+                if (ht && sectionTitles[this.dataset.section]) ht.textContent = sectionTitles[this.dataset.section];
+            });
         });
-    });
 
-    // Reset booking modal tabs on hide
-    var bookingModalEl = document.getElementById('bookingModal');
-    if (bookingModalEl) {
-        bookingModalEl.addEventListener('hidden.bs.modal', function () {
-            document.getElementById('bookingTab1').style.display = 'block';
-            document.getElementById('bookingFooter1').style.display = 'flex';
-            document.getElementById('bookingTab2').style.display = 'none';
-            document.getElementById('bookingFooter2').style.display = 'none';
-        });
-    }
-
-    // ── Date selector: load available slots ──
-    var interviewDateSelector = document.getElementById('interviewDateSelector');
-    if (interviewDateSelector) {
-        // Restore saved date
-        var savedDate = sessionStorage.getItem('candidateSelectedDate');
-        if (savedDate) {
-            interviewDateSelector.value = savedDate;
-            setTimeout(function() {
-                interviewDateSelector.dispatchEvent(new Event('change'));
-            }, 100);
-        }
-
-        interviewDateSelector.addEventListener('change', function() {
-            sessionStorage.setItem('candidateSelectedDate', this.value);
-            var selectedDate = this.value;
-            if (!selectedDate) return;
-            var tbody = document.querySelector('#availableSlotsTable tbody');
-            tbody.innerHTML = '<tr><td colspan="5" class="text-center"><div class="spinner-border spinner-border-sm" role="status"></div> Loading slots…</td></tr>';
-            var xhr = new XMLHttpRequest();
-            xhr.open('GET', '/available-slots-by-date?interview_date=' + selectedDate, true);
-            xhr.setRequestHeader('X-Requested-With', 'XMLHttpRequest');
-            xhr.onload = function() {
-                if (xhr.status === 200) {
-                    var response = JSON.parse(xhr.responseText);
-                    if (response.success) {
-                        updateAvailableSlotsTable(response.earth_slots, response.moon_slots);
-                    } else {
-                        tbody.innerHTML = '<tr><td colspan="5" class="text-center text-danger">' + response.error + '</td></tr>';
-                    }
-                } else {
-                    tbody.innerHTML = '<tr><td colspan="5" class="text-center text-danger">Error loading slots.</td></tr>';
-                }
-            };
-            xhr.onerror = function() {
-                tbody.innerHTML = '<tr><td colspan="5" class="text-center text-danger">Error loading slots.</td></tr>';
-            };
-            xhr.send();
-        });
-    }
-
-    function updateAvailableSlotsTable(earthSlots, moonSlots) {
-        var tbody = document.querySelector('#availableSlotsTable tbody');
-        var allSlots = earthSlots.concat(moonSlots);
-        if (allSlots.length === 0) {
-            tbody.innerHTML = '<tr><td colspan="5"><div class="empty-state"><div class="empty-state-icon"><i class="bi bi-calendar-x"></i></div><div class="empty-state-title">No slots available</div><div class="empty-state-sub">No slots available for this date.</div></div></td></tr>';
-            return;
-        }
-        var html = '';
-        allSlots.forEach(function(slot) {
-            html += '<tr>';
-            html += '<td><span class="badge bg-secondary">' + slot.license_name + '</span></td>';
-            html += '<td>' + slot.interview_date + '</td>';
-            html += '<td>' + slot.start_time + '</td>';
-            html += '<td>' + slot.end_time + '</td>';
-            html += '<td><button type="button" class="btn btn-primary btn-sm book-slot-btn" ';
-            html += 'data-bs-toggle="modal" data-bs-target="#bookingModal" ';
-            html += 'data-slot-id="' + slot.id + '" ';
-            html += 'data-slot-date="' + slot.interview_date + '" ';
-            html += 'data-slot-start="' + slot.start_time + '" ';
-            html += 'data-slot-end="' + slot.end_time + '" ';
-            html += 'data-slot-license="' + slot.license_name + '">Book</button></td>';
-            html += '</tr>';
-        });
-        tbody.innerHTML = html;
-    }
-
-    // ── Book slot button: fill modal ──
-    document.addEventListener('click', function(event) {
-        var button = event.target.closest('.book-slot-btn');
-        if (!button) return;
-        var slotDate = button.getAttribute('data-slot-date');
-        var slotStart = button.getAttribute('data-slot-start');
-        var slotEnd = button.getAttribute('data-slot-end');
-        var slotLicense = button.getAttribute('data-slot-license');
-        var slotId = button.getAttribute('data-slot-id');
-        document.getElementById('slotDetails').textContent = slotDate + '  ·  ' + slotStart + ' – ' + slotEnd + '  ·  ' + slotLicense;
-        document.getElementById('bookingForm').action = '/book-slot/' + slotId;
-    });
-
-    // ── Change slot button: load AJAX form ──
-    document.querySelectorAll('.change-slot-btn').forEach(function(button) {
-        button.addEventListener('click', function() {
-            var bookingId = this.getAttribute('data-booking-id');
-            var currentSlot = this.getAttribute('data-current-slot');
-            var currentLicense = this.getAttribute('data-current-license');
-            var interviewDate = this.getAttribute('data-interview-date');
-            document.getElementById('currentSlotDetails').textContent = interviewDate + '  ·  ' + currentSlot + '  ·  ' + currentLicense;
-            var container = document.getElementById('changeSlotFormContainer');
-            container.innerHTML = '<div class="text-center p-4"><div class="spinner-border" role="status"><span class="visually-hidden">Loading…</span></div></div>';
-            var xhr = new XMLHttpRequest();
-            xhr.open('GET', '/candidate-change-slot/' + bookingId, true);
-            xhr.setRequestHeader('X-Requested-With', 'XMLHttpRequest');
-            xhr.onload = function() {
-                if (xhr.status === 200) {
-                    container.innerHTML = xhr.responseText;
-                    initializeChangeSlotForm(bookingId);
-                } else {
-                    container.innerHTML = '<p class="text-danger">Failed to load available slots.</p>';
-                }
-            };
-            xhr.onerror = function() {
-                container.innerHTML = '<p class="text-danger">Error loading available slots.</p>';
-            };
-            xhr.send();
-        });
-    });
-
-    function initializeChangeSlotForm(bookingId) {
-        var dateInput = document.getElementById('rescheduleDate');
-        if (!dateInput) return;
-
-        function loadSlotsForDate(selectedDate) {
-            if (!selectedDate) return;
-            var xhr = new XMLHttpRequest();
-            xhr.open('GET', '/candidate-change-slot/' + bookingId + '?load_slots=1&interview_date=' + selectedDate, true);
-            xhr.setRequestHeader('X-Requested-With', 'XMLHttpRequest');
-            xhr.onload = function() {
-                if (xhr.status === 200) {
-                    var response = JSON.parse(xhr.responseText);
-                    if (response.success) {
-                        updateSlotsDisplay(response.time_blocks);
-                    } else {
-                        var c = document.getElementById('slotsContainer');
-                        if (c) c.innerHTML = '<p class="text-danger">' + response.error + '</p>';
-                    }
-                }
-            };
-            xhr.send();
-        }
-
-        dateInput.addEventListener('change', function() { loadSlotsForDate(this.value); });
-        setTimeout(function() { loadSlotsForDate(dateInput.value); }, 100);
-
-        function updateSlotsDisplay(timeBlocks) {
-            var container = document.getElementById('slotsContainer');
-            if (!container) return;
-            var html = '<div class="form-group"><label class="form-label">Available Slots</label>';
-            if (timeBlocks.length > 0) {
-                html += '<select id="new_slot_id" class="form-control slot-select" name="new_slot_id">';
-                timeBlocks.forEach(function(block) {
-                    if (block.available > 0) {
-                        html += '<option value="' + block.start_time + '">' + block.start_time + ' – ' + block.end_time + ' (' + block.available + ' available)</option>';
-                    } else {
-                        html += '<option value="' + block.start_time + '" disabled>' + block.start_time + ' – ' + block.end_time + ' (Fully Booked)</option>';
-                    }
-                });
-                html += '</select>';
-            } else {
-                html += '<p style="color:var(--c-text-muted);font-size:13px;">No available slots for the selected date.</p>';
-            }
-            html += '</div>';
-            container.innerHTML = html;
-            document.querySelectorAll('.slot-select').forEach(function(select) {
-                select.addEventListener('change', function() {
-                    var hiddenSlot = document.getElementById('selectedSlotId');
-                    if (hiddenSlot) hiddenSlot.value = this.value;
-                    var confirmBtn = document.getElementById('confirmChangeBtn');
-                    if (confirmBtn) confirmBtn.disabled = false;
-                });
-                // Trigger change event to set initial value
-                select.dispatchEvent(new Event('change'));
+        // Reset booking modal tabs on hide
+        var bookingModalEl = document.getElementById('bookingModal');
+        if (bookingModalEl) {
+            bookingModalEl.addEventListener('hidden.bs.modal', function () {
+                document.getElementById('bookingTab1').style.display = 'block';
+                document.getElementById('bookingFooter1').style.display = 'flex';
+                document.getElementById('bookingTab2').style.display = 'none';
+                document.getElementById('bookingFooter2').style.display = 'none';
             });
         }
 
-        var form = document.getElementById('changeSlotForm');
-        if (form) {
-            form.addEventListener('submit', function(e) {
-                e.preventDefault();
-                var selectedSlotId = document.getElementById('selectedSlotId');
-                if (!selectedSlotId || !selectedSlotId.value) { alert('Please select a slot.'); return; }
-                var formData = new FormData(form);
+        // ── Date selector: load available slots ──
+        var interviewDateSelector = document.getElementById('interviewDateSelector');
+        if (interviewDateSelector) {
+            // Restore saved date
+            var savedDate = sessionStorage.getItem('candidateSelectedDate');
+            if (savedDate) {
+                interviewDateSelector.value = savedDate;
+                setTimeout(function () {
+                    interviewDateSelector.dispatchEvent(new Event('change'));
+                }, 100);
+            }
+
+            interviewDateSelector.addEventListener('change', function () {
+                sessionStorage.setItem('candidateSelectedDate', this.value);
+                var selectedDate = this.value;
+                if (!selectedDate) return;
+                var tbody = document.querySelector('#availableSlotsTable tbody');
+                tbody.innerHTML = '<tr><td colspan="5" class="text-center"><div class="spinner-border spinner-border-sm" role="status"></div> Loading slots…</td></tr>';
                 var xhr = new XMLHttpRequest();
-                xhr.open('POST', form.action, true);
+                xhr.open('GET', '/available-slots-by-date?interview_date=' + selectedDate, true);
                 xhr.setRequestHeader('X-Requested-With', 'XMLHttpRequest');
-                xhr.onload = function() {
+                xhr.onload = function () {
                     if (xhr.status === 200) {
                         var response = JSON.parse(xhr.responseText);
                         if (response.success) {
-                            var modal = bootstrap.Modal.getInstance(document.getElementById('changeSlotModal'));
-                            if (modal) modal.hide();
-                            window.location.hash = 'my-bookings';
-                            location.reload();
-                        } else { alert(response.error || 'Failed to change slot'); }
-                    } else { alert('Failed to change slot'); }
+                            updateAvailableSlotsTable(response.earth_slots, response.moon_slots);
+                        } else {
+                            tbody.innerHTML = '<tr><td colspan="5" class="text-center text-danger">' + response.error + '</td></tr>';
+                        }
+                    } else {
+                        tbody.innerHTML = '<tr><td colspan="5" class="text-center text-danger">Error loading slots.</td></tr>';
+                    }
                 };
-                xhr.onerror = function() { alert('Error changing slot'); };
-                xhr.send(formData);
+                xhr.onerror = function () {
+                    tbody.innerHTML = '<tr><td colspan="5" class="text-center text-danger">Error loading slots.</td></tr>';
+                };
+                xhr.send();
             });
         }
+
+        function updateAvailableSlotsTable(earthSlots, moonSlots) {
+            var tbody = document.querySelector('#availableSlotsTable tbody');
+            var allSlots = earthSlots.concat(moonSlots);
+            if (allSlots.length === 0) {
+                tbody.innerHTML = '<tr><td colspan="5"><div class="empty-state"><div class="empty-state-icon"><i class="bi bi-calendar-x"></i></div><div class="empty-state-title">No slots available</div><div class="empty-state-sub">No slots available for this date.</div></div></td></tr>';
+                return;
+            }
+            var html = '';
+            allSlots.forEach(function (slot) {
+                html += '<tr>';
+                html += '<td><span class="badge bg-secondary">' + slot.license_name + '</span></td>';
+                html += '<td>' + slot.interview_date + '</td>';
+                html += '<td>' + slot.start_time + '</td>';
+                html += '<td>' + slot.end_time + '</td>';
+                html += '<td><button type="button" class="btn btn-primary btn-sm book-slot-btn" ';
+                html += 'data-bs-toggle="modal" data-bs-target="#bookingModal" ';
+                html += 'data-slot-id="' + slot.id + '" ';
+                html += 'data-slot-date="' + slot.interview_date + '" ';
+                html += 'data-slot-start="' + slot.start_time + '" ';
+                html += 'data-slot-end="' + slot.end_time + '" ';
+                html += 'data-slot-license="' + slot.license_name + '">Book</button></td>';
+                html += '</tr>';
+            });
+            tbody.innerHTML = html;
+        }
+
+        // ── Book slot button: fill modal ──
+        document.addEventListener('click', function (event) {
+            var button = event.target.closest('.book-slot-btn');
+            if (!button) return;
+            var slotDate = button.getAttribute('data-slot-date');
+            var slotStart = button.getAttribute('data-slot-start');
+            var slotEnd = button.getAttribute('data-slot-end');
+            var slotLicense = button.getAttribute('data-slot-license');
+            var slotId = button.getAttribute('data-slot-id');
+            document.getElementById('slotDetails').textContent = slotDate + '  ·  ' + slotStart + ' – ' + slotEnd + '  ·  ' + slotLicense;
+            document.getElementById('booking_interview_date').value = slotDate;
+            document.getElementById('booking_start_time').value = slotStart;
+            document.getElementById('bookingForm').action = '/book-slot';
+        });
+
+        // ── Change slot button: load AJAX form ──
+        document.querySelectorAll('.change-slot-btn').forEach(function (button) {
+            button.addEventListener('click', function () {
+                var bookingId = this.getAttribute('data-booking-id');
+                var currentSlot = this.getAttribute('data-current-slot');
+                var currentLicense = this.getAttribute('data-current-license');
+                var interviewDate = this.getAttribute('data-interview-date');
+                document.getElementById('currentSlotDetails').textContent = interviewDate + '  ·  ' + currentSlot + '  ·  ' + currentLicense;
+                var container = document.getElementById('changeSlotFormContainer');
+                container.innerHTML = '<div class="text-center p-4"><div class="spinner-border" role="status"><span class="visually-hidden">Loading…</span></div></div>';
+                var xhr = new XMLHttpRequest();
+                xhr.open('GET', '/candidate-change-slot/' + bookingId, true);
+                xhr.setRequestHeader('X-Requested-With', 'XMLHttpRequest');
+                xhr.onload = function () {
+                    if (xhr.status === 200) {
+                        container.innerHTML = xhr.responseText;
+                        initializeChangeSlotForm(bookingId);
+                    } else {
+                        container.innerHTML = '<p class="text-danger">Failed to load available slots.</p>';
+                    }
+                };
+                xhr.onerror = function () {
+                    container.innerHTML = '<p class="text-danger">Error loading available slots.</p>';
+                };
+                xhr.send();
+            });
+        });
+
+        function initializeChangeSlotForm(bookingId) {
+            var dateInput = document.getElementById('rescheduleDate');
+            if (!dateInput) return;
+
+            function loadSlotsForDate(selectedDate) {
+                if (!selectedDate) return;
+                var xhr = new XMLHttpRequest();
+                xhr.open('GET', '/candidate-change-slot/' + bookingId + '?load_slots=1&interview_date=' + selectedDate, true);
+                xhr.setRequestHeader('X-Requested-With', 'XMLHttpRequest');
+                xhr.onload = function () {
+                    if (xhr.status === 200) {
+                        var response = JSON.parse(xhr.responseText);
+                        if (response.success) {
+                            updateSlotsDisplay(response.time_blocks);
+                        } else {
+                            var c = document.getElementById('slotsContainer');
+                            if (c) c.innerHTML = '<p class="text-danger">' + response.error + '</p>';
+                        }
+                    }
+                };
+                xhr.send();
+            }
+
+            dateInput.addEventListener('change', function () { loadSlotsForDate(this.value); });
+            setTimeout(function () { loadSlotsForDate(dateInput.value); }, 100);
+
+            function updateSlotsDisplay(timeBlocks) {
+                var container = document.getElementById('slotsContainer');
+                if (!container) return;
+                var html = '<div class="form-group"><label class="form-label">Available Slots</label>';
+                if (timeBlocks.length > 0) {
+                    html += '<select id="new_slot_id" class="form-control slot-select" name="new_slot_id">';
+                    timeBlocks.forEach(function (block) {
+                        if (block.available > 0) {
+                            html += '<option value="' + block.start_time + '">' + block.start_time + ' – ' + block.end_time + ' (' + block.available + ' available)</option>';
+                        } else {
+                            html += '<option value="' + block.start_time + '" disabled>' + block.start_time + ' – ' + block.end_time + ' (Fully Booked)</option>';
+                        }
+                    });
+                    html += '</select>';
+                } else {
+                    html += '<p style="color:var(--c-text-muted);font-size:13px;">No available slots for the selected date.</p>';
+                }
+                html += '</div>';
+                container.innerHTML = html;
+                document.querySelectorAll('.slot-select').forEach(function (select) {
+                    select.addEventListener('change', function () {
+                        var hiddenSlot = document.getElementById('selectedSlotId');
+                        if (hiddenSlot) hiddenSlot.value = this.value;
+                        var confirmBtn = document.getElementById('confirmChangeBtn');
+                        if (confirmBtn) confirmBtn.disabled = false;
+                    });
+                    // Trigger change event to set initial value
+                    select.dispatchEvent(new Event('change'));
+                });
+            }
+
+            var form = document.getElementById('changeSlotForm');
+            if (form) {
+                form.addEventListener('submit', function (e) {
+                    e.preventDefault();
+                    var selectedSlotId = document.getElementById('selectedSlotId');
+                    if (!selectedSlotId || !selectedSlotId.value) { alert('Please select a slot.'); return; }
+                    var formData = new FormData(form);
+                    var xhr = new XMLHttpRequest();
+                    xhr.open('POST', form.action, true);
+                    xhr.setRequestHeader('X-Requested-With', 'XMLHttpRequest');
+                    xhr.onload = function () {
+                        if (xhr.status === 200) {
+                            var response = JSON.parse(xhr.responseText);
+                            if (response.success) {
+                                var modal = bootstrap.Modal.getInstance(document.getElementById('changeSlotModal'));
+                                if (modal) modal.hide();
+                                window.location.hash = 'my-bookings';
+                                location.reload();
+                            } else { alert(response.error || 'Failed to change slot'); }
+                        } else { alert('Failed to change slot'); }
+                    };
+                    xhr.onerror = function () { alert('Error changing slot'); };
+                    xhr.send(formData);
+                });
+            }
+        }
+
+    });
+
+    // ── Booking Modal Tab Navigation ──
+    function nextBookingTab() {
+        var cname = document.getElementById('booking_company_name').value.trim();
+        var tech = document.getElementById('booking_technology').value.trim();
+        var round = document.getElementById('booking_interview_round').value.trim();
+
+        if (!cname || !tech || !round) {
+            alert("Please fill in all required fields in Step 1.");
+            return;
+        }
+
+        document.getElementById('bookingTab1').style.display = 'none';
+        document.getElementById('bookingFooter1').style.display = 'none';
+        document.getElementById('bookingTab2').style.display = 'block';
+        document.getElementById('bookingFooter2').style.display = 'flex';
     }
 
-});
-
-// ── Booking Modal Tab Navigation ──
-function nextBookingTab() {
-    var cname = document.getElementById('booking_company_name').value.trim();
-    var tech = document.getElementById('booking_technology').value.trim();
-    var round = document.getElementById('booking_interview_round').value.trim();
-    
-    if (!cname || !tech || !round) {
-        alert("Please fill in all required fields in Step 1.");
-        return;
+    function prevBookingTab() {
+        document.getElementById('bookingTab2').style.display = 'none';
+        document.getElementById('bookingFooter2').style.display = 'none';
+        document.getElementById('bookingTab1').style.display = 'block';
+        document.getElementById('bookingFooter1').style.display = 'flex';
     }
-    
-    document.getElementById('bookingTab1').style.display = 'none';
-    document.getElementById('bookingFooter1').style.display = 'none';
-    document.getElementById('bookingTab2').style.display = 'block';
-    document.getElementById('bookingFooter2').style.display = 'flex';
-}
-
-function prevBookingTab() {
-    document.getElementById('bookingTab2').style.display = 'none';
-    document.getElementById('bookingFooter2').style.display = 'none';
-    document.getElementById('bookingTab1').style.display = 'block';
-    document.getElementById('bookingFooter1').style.display = 'flex';
-}
 </script>
 {% endblock %}

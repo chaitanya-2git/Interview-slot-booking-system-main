@@ -8,11 +8,7 @@
 <aside class="sidebar" id="sidebar">
     <!-- Logo -->
     <a href="{{ url_for('main.hr_dashboard') }}" class="sidebar-logo">
-        <img src="{{ url_for('static', filename='images/blujay_logo.jpg') }}" alt="BluJay">
-        <div class="sidebar-logo-text">
-            <span class="sidebar-logo-name">BluJay</span>
-            <div class="sidebar-logo-sub">Technologies</div>
-        </div>
+        <span class="sidebar-brand-name">BluJay Technologies</span>
     </a>
 
     <!-- User -->
@@ -67,14 +63,11 @@
      TOP HEADER
 ══════════════════════════════════════════════ -->
 <header class="top-header">
-    <div style="display:flex;align-items:center;gap:12px;">
+    <div class="top-header-left">
         <button class="sidebar-toggle" id="sidebarToggle" aria-label="Toggle sidebar">
             <i class="bi bi-list"></i>
         </button>
-        <div>
-            <div class="header-title" id="headerTitle">BluJay Technologies</div>
-            <div class="header-subtitle">Interview Management</div>
-        </div>
+        <span class="mobile-header-brand">BluJay Technologies</span>
     </div>
     <div class="header-actions">
         <a href="{{ url_for('main.create_slot') }}" class="btn btn-primary btn-sm">
@@ -96,42 +89,54 @@
     <div id="section-dashboard" class="content-section active">
         <div class="page-header">
             <div>
-                <div class="page-greeting">Good day, {{ user_name }} 👋</div>
-                <div class="page-meta">Here's your interview scheduling overview for today.</div>
+                <div class="page-greeting">Good morning, {{ user_name }}</div>
+                <div class="page-meta">Here's your interview schedule for today.</div>
             </div>
             <a href="{{ url_for('main.create_slot') }}" class="btn btn-primary">
-                <i class="bi bi-plus"></i> Create Interview Slot
+                <i class="bi bi-plus-lg"></i> Create Interview Slot
             </a>
         </div>
 
         <!-- KPI row -->
         <div class="kpi-row">
             <div class="kpi-block">
-                <div class="kpi-icon"><i class="bi bi-calendar-check"></i></div>
-                <div class="kpi-value">{{ stats.total_bookings if stats else '—' }}</div>
-                <div class="kpi-label">Total Bookings</div>
+                <div class="kpi-top">
+                    <span class="kpi-label">Today's Interviews</span>
+                    <i class="bi bi-calendar-day kpi-icon"></i>
+                </div>
+                <div class="kpi-value">{{ stats.todays_interviews if stats else '0' }}</div>
+                <div class="kpi-meta">Scheduled for today</div>
             </div>
             <div class="kpi-block">
-                <div class="kpi-icon"><i class="bi bi-calendar-day"></i></div>
-                <div class="kpi-value">{{ stats.todays_interviews if stats else '—' }}</div>
-                <div class="kpi-label">Today's Interviews</div>
+                <div class="kpi-top">
+                    <span class="kpi-label">Available Slots</span>
+                    <i class="bi bi-clock kpi-icon"></i>
+                </div>
+                <div class="kpi-value">{{ stats.available_slots if stats else '0' }}</div>
+                <div class="kpi-meta">Open for today</div>
             </div>
             <div class="kpi-block">
-                <div class="kpi-icon"><i class="bi bi-clock"></i></div>
-                <div class="kpi-value">{{ stats.available_slots if stats else '—' }}</div>
-                <div class="kpi-label">Available Slots</div>
+                <div class="kpi-top">
+                    <span class="kpi-label">Total Bookings</span>
+                    <i class="bi bi-calendar-check kpi-icon"></i>
+                </div>
+                <div class="kpi-value">{{ stats.total_bookings if stats else '0' }}</div>
+                <div class="kpi-meta">All time</div>
             </div>
             <div class="kpi-block">
-                <div class="kpi-icon"><i class="bi bi-people"></i></div>
-                <div class="kpi-value">{{ stats.total_candidates if stats else '—' }}</div>
-                <div class="kpi-label">Candidates</div>
+                <div class="kpi-top">
+                    <span class="kpi-label">Candidates</span>
+                    <i class="bi bi-people kpi-icon"></i>
+                </div>
+                <div class="kpi-value">{{ stats.total_candidates if stats else '0' }}</div>
+                <div class="kpi-meta">Registered</div>
             </div>
         </div>
 
-                <!-- Today's Interviews -->
-        <div class="panel" style="margin-top:var(--sp-6);">
+        <!-- Today's Interviews -->
+        <div class="panel">
             <div class="panel-header">
-                <span class="panel-title" style="font-size:16px;font-weight:700;">Today's Interviews</span>
+                <span class="panel-title">Today's Interviews</span>
             </div>
             <div class="table-responsive">
                 <table class="table table-hover">
@@ -256,7 +261,7 @@
                                     —
                                 {% endif %}
                             </td>
-                            <td>
+                            <td data-label="License">
                                 <span class="badge bg-secondary">{{ booking.license_name }}</span>
                             </td>
                             <td data-label="Date" style="white-space:nowrap;">{{ booking.interview_date }}</td>
@@ -500,24 +505,24 @@
         </div>
 
         <div class="kpi-row">
-            <div class="kpi-block">
+            <div class="kpi-block kpi-navy">
                 <div class="kpi-icon"><i class="bi bi-calendar-check"></i></div>
-                <div class="kpi-value">{{ stats.total_bookings if stats else '—' }}</div>
+                <div class="kpi-value">{{ stats.total_bookings if stats else '0' }}</div>
                 <div class="kpi-label">Total Bookings</div>
             </div>
-            <div class="kpi-block">
+            <div class="kpi-block kpi-blue">
                 <div class="kpi-icon"><i class="bi bi-calendar-day"></i></div>
-                <div class="kpi-value">{{ stats.todays_interviews if stats else '—' }}</div>
+                <div class="kpi-value">{{ stats.todays_interviews if stats else '0' }}</div>
                 <div class="kpi-label">Today's Interviews</div>
             </div>
-            <div class="kpi-block">
+            <div class="kpi-block kpi-green">
                 <div class="kpi-icon"><i class="bi bi-clock"></i></div>
-                <div class="kpi-value">{{ stats.available_slots if stats else '—' }}</div>
+                <div class="kpi-value">{{ stats.available_slots if stats else '0' }}</div>
                 <div class="kpi-label">Available Slots</div>
             </div>
-            <div class="kpi-block">
+            <div class="kpi-block kpi-amber">
                 <div class="kpi-icon"><i class="bi bi-people"></i></div>
-                <div class="kpi-value">{{ stats.total_candidates if stats else '—' }}</div>
+                <div class="kpi-value">{{ stats.total_candidates if stats else '0' }}</div>
                 <div class="kpi-label">Total Candidates</div>
             </div>
         </div>

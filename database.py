@@ -1,7 +1,8 @@
+import os
 import sqlite3
 from werkzeug.security import generate_password_hash, check_password_hash
 
-DATABASE = "interview_booking.db"
+DATABASE = os.path.join(os.path.abspath(os.path.dirname(__file__)), "interview_booking.db")
 
 
 def get_db_connection():
@@ -1352,8 +1353,8 @@ def create_default_hr_account():
         conn.close()
         return None
     
-    # Generate a temporary password
-    temp_password = secrets.token_urlsafe(12)
+    # Use a predictable default password for demo deployments with ephemeral filesystems
+    temp_password = "password123"
     
     # Create default HR account
     hashed_password = generate_password_hash(temp_password)

@@ -1,54 +1,48 @@
 {% extends "base.html" %}
 
 {% block content %}
-<div style="min-height: 100vh; display: flex; align-items: center; justify-content: center; background-color: var(--c-bg); padding: 20px;">
-    <div style="max-width: 440px; width: 100%; background: var(--c-surface); border-radius: var(--r-xl); box-shadow: var(--shadow-lg); overflow: hidden; border: 1px solid var(--c-border-light);">
-        
-        <!-- Header / Logo Area -->
-        <div style="padding: 40px 40px 20px 40px; text-align: center;">
-            <img src="{{ url_for('static', filename='images/blujay_logo.jpg') }}" alt="BluJay Technologies Logo" style="height: 64px; object-fit: contain; margin: 0 auto 16px auto;">
-            <h1 style="font-size: var(--font-size-2xl); font-weight: 700; color: var(--c-text-primary); margin-bottom: 8px;">Create Account</h1>
-            <p style="color: var(--c-text-secondary); font-size: var(--font-size-md); margin-bottom: 0;">Register for BluJay Interview Management</p>
+<div class="standalone-page">
+    <div class="form-shell">
+        <div class="form-shell-header" style="text-align: center;">
+            <div class="auth-brand-name">BluJay Technologies</div>
+            <div class="form-shell-title">Create Account</div>
+            <div class="form-shell-sub">Register for BluJay Interview Management</div>
         </div>
 
-        <!-- Form Area -->
-        <div style="padding: 20px 40px 40px 40px;">
+        <div class="form-shell-body">
             <form method="POST" action="{{ url_for('main.register') }}">
-                <div class="form-group mb-3">
-                    <label for="name" class="form-label" style="font-weight: 600; color: var(--c-text-secondary); font-size: var(--font-size-sm);">Full Name</label>
-                    <input type="text" id="name" name="name" class="form-control" style="padding: 10px 12px; font-size: var(--font-size-md);" required placeholder="Enter your full name">
+                <div class="form-group">
+                    <label for="name">Full Name <span style="color:var(--c-danger);">*</span></label>
+                    <input type="text" id="name" name="name" class="form-control" required placeholder="Enter your full name">
                 </div>
                 
-                <div class="form-group mb-3">
-                    <label for="email" class="form-label" style="font-weight: 600; color: var(--c-text-secondary); font-size: var(--font-size-sm);">Email Address</label>
-                    <input type="email" id="email" name="email" class="form-control" style="padding: 10px 12px; font-size: var(--font-size-md);" required placeholder="Enter your email">
+                <div class="form-group">
+                    <label for="email">Email Address <span style="color:var(--c-danger);">*</span></label>
+                    <input type="email" id="email" name="email" class="form-control" required placeholder="Enter your email">
                 </div>
                 
-                <div class="form-group mb-3">
-                    <label for="password" class="form-label" style="font-weight: 600; color: var(--c-text-secondary); font-size: var(--font-size-sm);">Password</label>
-                    <input type="password" id="password" name="password" class="form-control" style="padding: 10px 12px; font-size: var(--font-size-md);" required placeholder="Create a password">
+                <div class="form-group">
+                    <label for="password">Password <span style="color:var(--c-danger);">*</span></label>
+                    <input type="password" id="password" name="password" class="form-control" required placeholder="Create a password">
                 </div>
                 
-                <div class="form-group mb-4">
-                    <label for="role" class="form-label" style="font-weight: 600; color: var(--c-text-secondary); font-size: var(--font-size-sm);">Role</label>
-                    <select id="role" name="role" class="form-select" style="padding: 10px 12px; font-size: var(--font-size-md);" required>
+                <div class="form-group">
+                    <label for="role">Role <span style="color:var(--c-danger);">*</span></label>
+                    <select id="role" name="role" class="form-select" required>
                         <option value="candidate">Candidate</option>
                         <option value="hr">HR Administrator</option>
                     </select>
                 </div>
 
-                <button type="submit" class="btn btn-primary w-100" style="padding: 12px; font-size: var(--font-size-md); font-weight: 600; background-color: var(--c-accent); border-color: var(--c-accent);">
+                <button type="submit" class="btn btn-primary w-100" style="margin-top:8px;">
                     Register Account
                 </button>
             </form>
             
-            <div style="margin-top: 24px; text-align: center;">
-                <p style="font-size: var(--font-size-sm); color: var(--c-text-muted);">
-                    Already have an account? <a href="{{ url_for('main.login') }}" style="color: var(--c-accent); font-weight: 600;">Sign in here</a>
-                </p>
-            </div>
+            <p style="margin-top:24px; text-align:center; font-size:12px; color:var(--c-text-secondary);">
+                Already have an account? <a href="{{ url_for('main.login') }}">Sign in here</a>
+            </p>
         </div>
-        
     </div>
 </div>
 {% endblock %}
