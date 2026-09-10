@@ -1,0 +1,47 @@
+{% extends 'base.html' %}
+{% block content %}
+<link rel="stylesheet" href="{{ url_for('static', filename='css/settings.css', v='1') }}">
+<main class="settings-page">
+    <nav class="settings-nav" aria-label="Page navigation"><img src="{{ url_for('static', filename='images/blujay-logo.png') }}" alt="BluJay Technologies"><a href="{{ url_for('main.hr_dashboard' if user.role in ('hr', 'admin') else 'main.candidate_dashboard') }}"><i class="bi bi-arrow-left"></i> Dashboard</a></nav>
+    <header class="settings-heading"><p class="settings-eyebrow">YOUR WORKSPACE</p><h1>Account Settings</h1><p>Manage your profile, security, and the way your portal feels.</p></header>
+    {% if settings_error %}<div class="alert alert-danger" role="alert">{{ settings_error }}</div>{% endif %}
+    <div class="settings-layout">
+        <aside class="settings-summary">
+            <div class="settings-avatar">{{ user.name[0]|upper if user.name else '?' }}</div><h2>{{ user.name }}</h2><p>{{ user.email }}</p><span class="settings-role">{{ 'Administrator' if user.role == 'admin' else ('HR' if user.role == 'hr' else 'Candidate') }}</span>
+            <dl><div><dt>Account ID</dt><dd>#{{ user.id }}</dd></div><div><dt>Status</dt><dd class="settings-active">Active</dd></div></dl>
+            <nav aria-label="Settings sections"><a href="#profile"><i class="bi bi-person"></i> Profile details</a><a href="#security"><i class="bi bi-shield-lock"></i> Password &amp; security</a><a href="#preferences"><i class="bi bi-sliders"></i> Display preferences</a></nav>
+            <a class="settings-signout" href="{{ url_for('main.logout') }}"><i class="bi bi-box-arrow-right"></i> Sign out</a>
+        </aside>
+        <div class="settings-sections">
+            <section class="settings-card" id="profile"><header><span class="settings-icon"><i class="bi bi-person"></i></span><div><h2>Profile details</h2><p>Keep your name and sign-in email up to date.</p></div></header>
+                <form method="POST">
+                    <input type="hidden" name="csrf_token" value="{{ session.settings_csrf }}"><input type="hidden" name="action" value="profile">
+                    <div class="settings-fields"><div class="form-group"><label for="profileName">Full name</label><input class="form-control" id="profileName" name="name" value="{{ request.form.get('name', user.name) if request.form.get('action') == 'profile' else user.name }}" required maxlength="100" autocomplete="name"></div><div class="form-group"><label for="profileEmail">Email address</label><input class="form-control" id="profileEmail" type="email" name="email" value="{{ request.form.get('email', user.email) if request.form.get('action') == 'profile' else user.email }}" required maxlength="254" autocomplete="email"></div></div>
+                    <div class="form-group"><label for="profilePassword">Current password <span class="settings-optional">Required only when changing email</span></label><input class="form-control" id="profilePassword" name="current_password" type="password" autocomplete="current-password" placeholder="Verify an email change"></div>
+                    <footer><span>Your email is also your login ID.</span><button class="btn btn-primary" type="submit">Save profile</button></footer>
+                </form>
+            </section>
+            <section class="settings-card" id="security"><header><span class="settings-icon"><i class="bi bi-shield-lock"></i></span><div><h2>Password &amp; security</h2><p>Choose a strong password to protect your account.</p></div></header>
+                <form method="POST"><input type="hidden" name="csrf_token" value="{{ session.settings_csrf }}"><input type="hidden" name="action" value="password">
+                    <div class="form-group"><label for="currentPassword">Current password</label><input class="form-control" id="currentPassword" name="current_password" type="password" required autocomplete="current-password"></div>
+                    <div class="settings-fields"><div class="form-group"><label for="newPassword">New password</label><input class="form-control" id="newPassword" name="new_password" type="password" required minlength="8" autocomplete="new-password" aria-describedby="passwordHint"></div><div class="form-group"><label for="confirmPassword">Confirm new password</label><input class="form-control" id="confirmPassword" name="confirm_password" type="password" required minlength="8" autocomplete="new-password"></div></div>
+                    <label class="settings-show"><input type="checkbox" id="showSettingsPasswords"> Show passwords in this section</label>
+                    <footer><span id="passwordHint">Use at least 8 characters.</span><button class="btn btn-primary" type="submit">Update password</button></footer>
+                </form>
+            </section>
+            <section class="settings-card" id="preferences"><header><span class="settings-icon"><i class="bi bi-sliders"></i></span><div><h2>Display preferences</h2><p>Make the portal more comfortable to use.</p></div></header>
+                <form method="POST"><input type="hidden" name="csrf_token" value="{{ session.settings_csrf }}"><input type="hidden" name="action" value="preferences">
+                    <label class="settings-option" for="largerText"><span><strong>Larger text</strong><small>Increase text size for forms, tables, and page descriptions.</small></span><input id="largerText" type="checkbox" name="larger_text" {% if account_preferences.larger_text %}checked{% endif %}></label>
+                    <label class="settings-option" for="reduceMotion"><span><strong>Reduce motion</strong><small>Minimize animations and transitions across the portal.</small></span><input id="reduceMotion" type="checkbox" name="reduce_motion" {% if account_preferences.reduce_motion %}checked{% endif %}></label>
+                    <footer><span>Saved to your account across devices.</span><button class="btn btn-primary" type="submit">Save preferences</button></footer>
+                </form>
+            </section>
+        </div>
+    </div>
+</main>
+{% endblock %}
+{% block extra_scripts %}<script>
+document.getElementById('showSettingsPasswords').addEventListener('change', function () {
+    ['currentPassword', 'newPassword', 'confirmPassword'].forEach(id => { document.getElementById(id).type = this.checked ? 'text' : 'password'; });
+});
+</script>{% endblock %}

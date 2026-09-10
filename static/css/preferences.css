@@ -1,0 +1,4 @@
+﻿/* Saved account accessibility preferences. */
+body.pref-larger-text :is(.page-meta, .section-description, .table td, .form-control, .form-group label, .sidebar-link, .settings-card p, .settings-card label, .settings-option small, .cm-email, .cm-actions a, .cm-actions button) { font-size: 16px; }
+body.pref-reduce-motion *, body.pref-reduce-motion *::before, body.pref-reduce-motion *::after { animation-duration: .01ms !important; animation-iteration-count: 1 !important; transition-duration: .01ms !important; scroll-behavior: auto !important; }
+@media (prefers-reduced-motion: reduce) { *, *::before, *::after { animation-duration: .01ms !important; animation-iteration-count: 1 !important; transition-duration: .01ms !important; scroll-behavior: auto !important; } }

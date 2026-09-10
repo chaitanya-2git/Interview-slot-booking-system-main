@@ -368,50 +368,60 @@ document.addEventListener("DOMContentLoaded", function () {
     /* ---------------- Candidate Calendar ---------------- */
 
     if (dateSelector) {
-        // Restore saved date if exists and on HR Dashboard
-        if (window.location.pathname === '/hr-dashboard' || window.location.pathname === '/') {
-            const savedDate = sessionStorage.getItem('hrSelectedDate');
-            if (savedDate) {
-                dateSelector.value = savedDate;
-                setTimeout(function() {
-                    dateSelector.dispatchEvent(new Event('change'));
-                }, 100);
-            }
+        const isCandidateDashboard = window.location.pathname === '/candidate-dashboard';
+        const storageKey = isCandidateDashboard ? 'candidateSelectedDate' : 'hrSelectedDate';
+        const statusMessage = document.getElementById('slotLoadStatus');
+        const today = new Date();
+        today.setHours(0, 0, 0, 0);
+        dateSelector.min = today.toISOString().split('T')[0];
+
+        const savedDate = sessionStorage.getItem(storageKey);
+        if (savedDate && savedDate >= dateSelector.min) {
+            dateSelector.value = savedDate;
+            setTimeout(function() { dateSelector.dispatchEvent(new Event('change')); }, 100);
         }
-        
-        dateSelector.addEventListener("change", function () {
-            
-            // Save selected date
-            if (window.location.pathname === '/hr-dashboard' || window.location.pathname === '/') {
-                sessionStorage.setItem('hrSelectedDate', this.value);
-            }
-            
-            fetch("/get-slots-by-date", {
 
-                method: "POST",
-
-                headers: {
-                    "Content-Type": "application/json"
-                },
-
-                body: JSON.stringify({
-                    interview_date: this.value
-                })
-
-            })
-
-            .then(res => res.json())
-
-            .then(data => {
-
-                if (!data.success) return;
-
-                updateSlotsTable(data.time_blocks);
-
+        document.querySelectorAll('.date-shortcut[data-date-offset]').forEach(function(button) {
+            button.addEventListener('click', function() {
+                const selected = new Date(today);
+                selected.setDate(selected.getDate() + Number(this.dataset.dateOffset));
+                dateSelector.value = selected.toISOString().split('T')[0];
+                dateSelector.dispatchEvent(new Event('change'));
             });
-
         });
 
+        dateSelector.addEventListener("change", function () {
+            if (!this.value) return;
+            if (this.value < dateSelector.min) this.value = dateSelector.min;
+            sessionStorage.setItem(storageKey, this.value);
+            if (statusMessage) statusMessage.textContent = 'Loading available interview slots.';
+
+            const tbody = document.querySelector("#availableSlotsTable tbody");
+            if (tbody) {
+                tbody.innerHTML = "<tr><td colspan='5'><div class='table-loading'><span class='spinner-border spinner-border-sm' aria-hidden='true'></span> Loading available slots…</div></td></tr>";
+            }
+
+            const endpoint = isCandidateDashboard
+                ? "/available-slots-by-date?interview_date=" + encodeURIComponent(this.value)
+                : "/get-slots-by-date";
+            const options = isCandidateDashboard
+                ? { headers: { "X-Requested-With": "XMLHttpRequest" } }
+                : { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ interview_date: this.value }) };
+
+            fetch(endpoint, options)
+                .then(res => res.json())
+                .then(data => {
+                    if (!data.success) throw new Error(data.error || 'Unable to load slots.');
+                    updateSlotsTable(data.time_blocks);
+                    if (statusMessage) statusMessage.textContent = data.time_blocks.length + ' time options loaded.';
+                })
+                .catch(() => {
+                    if (tbody) {
+                        tbody.innerHTML = "<tr><td colspan='5'><div class='empty-state'><div class='empty-state-icon'><i class='bi bi-exclamation-circle'></i></div><div class='empty-state-title'>Unable to load slots</div><div class='empty-state-sub'>Please choose another date or try again.</div></div></td></tr>";
+                    }
+                    if (statusMessage) statusMessage.textContent = 'Unable to load slots.';
+                });
+        });
     }
 
 
@@ -450,11 +460,11 @@ document.addEventListener("DOMContentLoaded", function () {
 
             html += `
             <tr>
-                <td>${availabilityBadge}</td>
-                <td>${block.interview_date}</td>
-                <td>${block.start_time}</td>
-                <td>${block.end_time}</td>
-                <td>${actionButton}</td>
+                <td data-label="Availability">${availabilityBadge}</td>
+                <td data-label="Date">${block.interview_date}</td>
+                <td data-label="Start time">${block.start_time}</td>
+                <td data-label="End time">${block.end_time}</td>
+                <td data-label="Action">${actionButton}</td>
             </tr>`;
 
         });

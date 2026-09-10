@@ -4,6 +4,7 @@ from routes import app_routes
 from database import create_tables, initialize_default_licenses_and_slots, create_default_hr_account
 
 app = Flask(__name__)
+app.config['TEMPLATES_AUTO_RELOAD'] = True
 app.secret_key = os.environ.get("SECRET_KEY", "your-secret-key-here")
 
 # Create the database tables

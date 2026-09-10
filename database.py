@@ -174,6 +174,14 @@ def create_tables():
         )
     ''')
     
+    cursor.execute('''
+        CREATE TABLE IF NOT EXISTS user_preferences (
+            user_id INTEGER PRIMARY KEY REFERENCES users(id),
+            larger_text INTEGER NOT NULL DEFAULT 0,
+            reduce_motion INTEGER NOT NULL DEFAULT 0
+        )
+    ''')
+
     # Create licenses table
     cursor.execute('''
         CREATE TABLE IF NOT EXISTS licenses (
@@ -213,6 +221,7 @@ def create_tables():
     interview_completed BOOLEAN DEFAULT 0,
     hr_name TEXT,
     hr_number TEXT,
+    support_person TEXT,
 
     FOREIGN KEY (user_id) REFERENCES users(id),
     FOREIGN KEY (slot_id) REFERENCES interview_slots(id)
@@ -827,25 +836,47 @@ def get_all_bookings():
     
     return [dict(booking) for booking in bookings]
 
+def interview_time_minutes(value):
+    """Convert stored 12-hour or 24-hour times to chronological minutes."""
+    from datetime import datetime
+    for format in ('%I:%M %p', '%H:%M', '%H:%M:%S'):
+        try:
+            parsed = datetime.strptime(str(value).strip().upper(), format)
+            return parsed.hour * 60 + parsed.minute
+        except ValueError:
+            continue
+    return 24 * 60
+
+
+def build_today_schedule(bookings):
+    hours = {hour: [] for hour in range(10, 20)}
+    other = []
+    for booking in sorted(bookings, key=lambda item: (interview_time_minutes(item['start_time']), item['id'])):
+        hour = interview_time_minutes(booking['start_time']) // 60
+        if hour in hours:
+            hours[hour].append(booking)
+        else:
+            other.append(booking)
+    return [{'hour': hour, 'label': f"{hour % 12 or 12}:00 {'AM' if hour < 12 else 'PM'}", 'bookings': items} for hour, items in hours.items()], other
+
+
 def get_todays_interviews():
-    """Get today's interview bookings with user, slot, and license details for HR view."""
+    """Today's interviews in India time, ordered by actual start time."""
     conn = get_db_connection()
-    cursor = conn.cursor()
-    
-    cursor.execute('''
-        SELECT b.*, u.name as user_name, u.email as user_email, 
-               s.interview_date, s.start_time, s.end_time, s.status as slot_status, l.name as license_name
-        FROM bookings b 
-        JOIN users u ON b.user_id = u.id
-        JOIN interview_slots s ON b.slot_id = s.id 
-        JOIN licenses l ON s.license_id = l.id
-        WHERE s.interview_date = DATE('now')
-        ORDER BY s.start_time
-    ''')
-    bookings = cursor.fetchall()
-    conn.close()
-    
-    return [dict(booking) for booking in bookings]
+    try:
+        bookings = conn.execute("""
+            SELECT b.*, u.name as user_name, u.email as user_email,
+                   s.interview_date, s.start_time, s.end_time, s.status as slot_status, l.name as license_name
+            FROM bookings b
+            JOIN users u ON b.user_id = u.id
+            JOIN interview_slots s ON b.slot_id = s.id
+            JOIN licenses l ON s.license_id = l.id
+            WHERE s.interview_date = DATE('now', '+5 hours', '+30 minutes')
+        """).fetchall()
+        return sorted([dict(booking) for booking in bookings], key=lambda item: (interview_time_minutes(item['start_time']), item['id']))
+    finally:
+        conn.close()
+
 
 def reschedule_interview(booking_id, new_slot_id):
     import sqlite3
@@ -1439,4 +1470,23 @@ def update_candidate(user_id, name, email):
 
 if __name__ == '__main__':
     create_tables()
-    
+
+
+def delete_candidate_account(user_id):
+    """Atomically remove a candidate and their records, freeing confirmed slots."""
+    conn = get_db_connection()
+    try:
+        with conn:
+            conn.execute('BEGIN IMMEDIATE')
+            candidate = conn.execute("SELECT id FROM users WHERE id = ? AND role = 'candidate'", (user_id,)).fetchone()
+            if not candidate:
+                return False
+            slots = conn.execute("SELECT DISTINCT slot_id FROM bookings WHERE user_id = ? AND booking_status = 'confirmed'", (user_id,)).fetchall()
+            for table in ('notifications', 'previous_interview_history', 'user_preferences', 'bookings'):
+                conn.execute(f'DELETE FROM {table} WHERE user_id = ?', (user_id,))
+            for slot in slots:
+                conn.execute("UPDATE interview_slots SET status = 'available' WHERE id = ? AND status = 'booked' AND NOT EXISTS (SELECT 1 FROM bookings WHERE slot_id = ? AND booking_status = 'confirmed')", (slot['slot_id'], slot['slot_id']))
+            conn.execute("DELETE FROM users WHERE id = ? AND role = 'candidate'", (user_id,))
+        return True
+    finally:
+        conn.close()

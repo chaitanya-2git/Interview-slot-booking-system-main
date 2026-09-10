@@ -1,0 +1,28 @@
+﻿{% extends 'base.html' %}
+{% block content %}
+<link rel="stylesheet" href="{{ url_for('static', filename='css/settings.css', v='1') }}">
+<main class="settings-page">
+    <nav class="settings-nav" aria-label="Page navigation"><img src="{{ url_for('static', filename='images/blujay-logo.png') }}" alt="BluJay Technologies"><a href="{{ url_for('main.hr_dashboard') }}"><i class="bi bi-arrow-left"></i> Dashboard</a></nav>
+    <header class="settings-heading"><p class="settings-eyebrow">ADMINISTRATION</p><h1>Manage Admins</h1><p>Add administrators to manage candidates, interviews, and other admin accounts.</p></header>
+    {% if admin_error %}<div class="alert alert-danger" role="alert">{{ admin_error }}</div>{% endif %}
+    <div class="settings-sections">
+        <section class="settings-card"><header><span class="settings-icon"><i class="bi bi-person-gear"></i></span><div><h2>Administrators ({{ admins|length }})</h2><p>Administrators have full candidate management and admin creation access.</p></div></header>
+            {% for admin in admins %}
+            <div style="padding:16px 0;border-top:1px solid #edf1f7;overflow-wrap:anywhere;">
+                <strong>{{ admin.name }}</strong>{% if admin.id == session.user_id %} <span class="settings-role">You</span>{% endif %}
+                <p style="margin:6px 0;color:#647792;">{{ admin.email }}</p>
+                <span class="settings-role">{{ 'Active' if admin.is_active else 'Inactive' }}</span>
+                {% if admin.force_password_change %}<span class="settings-role">Password setup required</span>{% endif %}
+            </div>
+            {% endfor %}
+        </section>
+        <section class="settings-card"><header><span class="settings-icon"><i class="bi bi-person-plus"></i></span><div><h2>Add admin</h2><p>The new admin must change their temporary password on first login.</p></div></header>
+            <form method="POST"><input type="hidden" name="csrf_token" value="{{ session.admin_csrf }}">
+                <div class="settings-fields"><div class="form-group"><label for="adminName">Full name</label><input class="form-control" id="adminName" name="name" required maxlength="100" value="{{ request.form.get('name', '') }}"></div><div class="form-group"><label for="adminEmail">Login email</label><input class="form-control" type="email" id="adminEmail" name="email" required maxlength="254" value="{{ request.form.get('email', '') }}"></div></div>
+                <div class="settings-fields"><div class="form-group"><label for="adminPassword">Temporary password</label><input class="form-control" type="password" id="adminPassword" name="password" autocomplete="new-password" required minlength="8"></div><div class="form-group"><label for="adminConfirm">Confirm password</label><input class="form-control" type="password" id="adminConfirm" name="confirm_password" autocomplete="new-password" required minlength="8"></div></div>
+                <footer><span>Only administrators can add admins.</span><button class="btn btn-primary" type="submit"><i class="bi bi-person-plus"></i> Create admin</button></footer>
+            </form>
+        </section>
+    </div>
+</main>
+{% endblock %}

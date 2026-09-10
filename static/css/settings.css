@@ -1,0 +1,55 @@
+﻿.settings-page { max-width: 1140px; padding: 24px 28px 56px; margin: auto; color: #17315c; }
+.settings-nav { display: flex; align-items: center; justify-content: space-between; padding-bottom: 22px; border-bottom: 1px solid #dce5f1; margin-bottom: 30px; }
+.settings-nav img { width: 140px; height: 42px; object-fit: contain; }
+.settings-nav a { font-size: 13px; font-weight: 600; display: flex; gap: 8px; align-items: center; }
+.settings-eyebrow { font-size: 10px; font-weight: 800; letter-spacing: 1.8px; color: #2468c3; }
+.settings-heading { margin-bottom: 28px; }
+.settings-heading h1 { font-size: 32px; letter-spacing: -1px; font-weight: 750; margin-bottom: 10px; }
+.settings-heading > p:last-child { color: #647792; font-size: 14px; }
+.settings-layout { display: grid; grid-template-columns: 260px minmax(0, 1fr); gap: 24px; align-items: start; }
+.settings-summary, .settings-card { background: #fff; border: 1px solid #dfe7f3; border-radius: 18px; box-shadow: 0 5px 18px rgba(23,49,92,.035); }
+.settings-summary { padding: 24px; }
+.settings-avatar { width: 56px; height: 56px; display: grid; place-items: center; border-radius: 16px; background: #edf3ff; color: #2468c3; font-size: 25px; font-weight: 700; margin-bottom: 16px; }
+.settings-summary h2 { font-size: 18px; font-weight: 700; line-height: 1.4; overflow-wrap: anywhere; }
+.settings-summary > p { color: #647792; font-size: 12px; overflow-wrap: anywhere; }
+.settings-role { display: inline-block; border-radius: 20px; padding: 5px 10px; background: #edf3ff; color: #2468c3; font-size: 11px; font-weight: 650; }
+.settings-summary dl { border-block: 1px solid #edf1f7; margin: 22px 0 16px; padding: 16px 0; }
+.settings-summary dl div { display: flex; justify-content: space-between; gap: 10px; font-size: 12px; margin: 5px 0; }
+.settings-summary dt { color: #647792; font-weight: 500; }
+.settings-summary dd { margin: 0; font-weight: 600; }
+.settings-active { color: #07806b; }
+.settings-summary nav { display: grid; gap: 6px; }
+.settings-summary nav a { display: flex; gap: 9px; align-items: center; padding: 10px 0; font-size: 12px; color: #476184; }
+.settings-signout { display: flex; gap: 8px; align-items: center; color: #ae4653; font-size: 12px; font-weight: 600; margin-top: 18px; }
+.settings-sections { display: grid; gap: 22px; min-width: 0; }
+.settings-card { padding: 26px; scroll-margin-top: 20px; }
+.settings-card > header { display: flex; gap: 13px; align-items: flex-start; margin-bottom: 24px; }
+.settings-icon { display: grid; place-items: center; width: 40px; height: 40px; flex-shrink: 0; border-radius: 12px; background: #edf3ff; color: #2468c3; font-size: 19px; }
+.settings-card h2 { font-size: 17px; font-weight: 700; margin: 0 0 6px; }
+.settings-card header p { color: #647792; font-size: 12px; line-height: 1.5; margin: 0; }
+.settings-fields { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 16px; }
+.settings-card .form-control { width: 100%; min-width: 0; }
+.settings-card label { font-size: 12px; }
+.settings-optional { display: block; color: #7c8da6; font-size: 10px; font-weight: 400; margin: 4px 0; }
+.settings-card footer { display: flex; align-items: center; justify-content: space-between; gap: 14px; border-top: 1px solid #edf1f7; padding-top: 18px; margin-top: 22px; }
+.settings-card footer > span { font-size: 11px; color: #647792; }
+.settings-card footer .btn { flex-shrink: 0; font-size: 12px; }
+.settings-option { display: flex; align-items: center; justify-content: space-between; gap: 20px; padding: 16px 0; cursor: pointer; }
+.settings-option + .settings-option { border-top: 1px solid #edf1f7; }
+.settings-option strong { display: block; font-size: 13px; margin-bottom: 5px; }
+.settings-option small { display: block; font-size: 12px; font-weight: 400; color: #647792; line-height: 1.5; }
+.settings-option input, .settings-show input { accent-color: #2468c3; width: 19px; height: 19px; flex-shrink: 0; }
+.settings-show { display: flex; align-items: center; gap: 9px; cursor: pointer; }
+.settings-page :is(a, input, button):focus-visible { outline: 3px solid #74a9f4; outline-offset: 3px; }
+@media (max-width: 760px) {
+ .settings-page { padding: 18px 16px 36px; }
+ .settings-nav { margin-bottom: 24px; }
+ .settings-heading h1 { font-size: 27px; }
+ .settings-layout { grid-template-columns: 1fr; gap: 18px; }
+ .settings-summary { padding: 20px; }
+ .settings-summary nav { grid-template-columns: 1fr; }
+ .settings-card { padding: 20px; }
+ .settings-fields { grid-template-columns: 1fr; gap: 0; }
+ .settings-card footer { flex-direction: column; align-items: stretch; }
+ .settings-card footer .btn { width: 100%; min-height: 44px; }
+}

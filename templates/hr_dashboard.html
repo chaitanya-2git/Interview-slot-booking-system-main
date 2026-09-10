@@ -8,7 +8,7 @@
 <aside class="sidebar" id="sidebar">
     <!-- Logo -->
     <a href="{{ url_for('main.hr_dashboard') }}" class="sidebar-logo">
-        <span class="sidebar-brand-name">BluJay Technologies</span>
+        <img src="{{ url_for('static', filename='images/blujay-logo.png') }}" class="sidebar-brand-logo" alt="BluJay Technologies">
     </a>
 
     <!-- User -->
@@ -16,7 +16,7 @@
         <div class="sidebar-avatar">{{ user_name[0] if user_name else 'H' }}</div>
         <div class="sidebar-user-info">
             <div class="sidebar-user-name">{{ user_name }}</div>
-            <div class="sidebar-user-role">HR Admin</div>
+            <div class="sidebar-user-role">{{ 'Administrator' if session.user_role == 'admin' else 'HR' }}</div>
         </div>
     </div>
 
@@ -38,6 +38,11 @@
         <a href="{{ url_for('main.manage_candidates') }}" class="sidebar-link">
             <i class="bi bi-people"></i> Candidates
         </a>
+        {% if session.user_role == 'admin' %}
+        <a href="{{ url_for('main.manage_admins') }}" class="sidebar-link">
+            <i class="bi bi-person-gear"></i> Manage Admins
+        </a>
+        {% endif %}
         <button class="sidebar-link" data-section="notifications">
             <i class="bi bi-bell"></i> Notifications
             {% if unread_count and unread_count > 0 %}
@@ -50,7 +55,7 @@
 
         <div class="sidebar-divider"></div>
 
-        <a href="{{ url_for('main.change_password') }}" class="sidebar-link">
+        <a href="{{ url_for('main.settings') }}" class="sidebar-link">
             <i class="bi bi-gear"></i> Settings
         </a>
         <a href="{{ url_for('main.logout') }}" class="sidebar-link sidebar-logout">
@@ -67,7 +72,7 @@
         <button class="sidebar-toggle" id="sidebarToggle" aria-label="Toggle sidebar">
             <i class="bi bi-list"></i>
         </button>
-        <span class="mobile-header-brand">BluJay Technologies</span>
+        <img src="{{ url_for('static', filename='images/blujay-logo.png') }}?v=2" class="mobile-brand-logo" alt="BluJay Technologies">
     </div>
     <div class="header-actions">
         <a href="{{ url_for('main.create_slot') }}" class="btn btn-primary btn-sm">
@@ -133,79 +138,9 @@
             </div>
         </div>
 
-        <!-- Today's Interviews -->
-        <div class="panel">
-            <div class="panel-header">
-                <span class="panel-title">Today's Interviews</span>
-            </div>
-            <div class="table-responsive">
-                <table class="table table-hover">
-                    <thead>
-                        <tr>
-                            <th>Time</th>
-                            <th>Candidate</th>
-                            <th>Technology</th>
-                            <th>Round</th>
-                            <th>Status</th>
-                            <th>Actions</th>
-                        </tr>
-                    </thead>
-                    <tbody>
-                        {% if todays_bookings %}
-                        {% for booking in todays_bookings %}
-                        <tr>
-                            <td data-label="Time" style="white-space:nowrap;font-weight:600;">{{ booking.start_time }} – {{ booking.end_time }}</td>
-                            <td data-label="Candidate">
-                                <div class="candidate-cell">
-                                    <div class="cell-avatar">{{ booking.user_name[0] if booking.user_name else '?' }}</div>
-                                    <span class="cell-name">{{ booking.user_name }}</span>
-                                </div>
-                            </td>
-                            <td data-label="Technology">{{ booking.technology or '—' }}</td>
-                            <td data-label="Round">{{ booking.interview_round or '—' }}</td>
-                            <td data-label="Status">
-                                {% if booking.booking_status == 'confirmed' %}
-                                    <span class="badge bg-success">Confirmed</span>
-                                {% elif booking.booking_status == 'cancelled' %}
-                                    <span class="badge bg-danger">Cancelled</span>
-                                {% elif booking.booking_status == 'completed' %}
-                                    <span class="badge bg-info">Completed</span>
-                                {% else %}
-                                    <span class="badge bg-secondary">{{ booking.booking_status }}</span>
-                                {% endif %}
-                            </td>
-                            <td data-label="Actions">
-                                <div class="action-menu">
-                                    <a href="{{ url_for('main.candidate_history', user_id=booking.user_id) }}" class="btn btn-outline-primary btn-sm" style="padding:4px 10px !important;">
-                                        View
-                                    </a>
-                                    {% if booking.booking_status == 'confirmed' and not booking.interview_completed %}
-                                    <a href="{{ url_for('main.complete_interview_route', booking_id=booking.id) }}" class="btn btn-success btn-sm" style="padding:4px 10px !important;">
-                                        Complete
-                                    </a>
-                                    {% endif %}
-                                </div>
-                            </td>
-                        </tr>
-                        {% endfor %}
-                        {% else %}
-                        <tr>
-                            <td colspan="6">
-                                <div class="empty-state">
-                                    <div class="empty-state-icon"><i class="bi bi-sun"></i></div>
-                                    <div class="empty-state-title">No interviews today</div>
-                                    <div class="empty-state-sub">Your schedule is clear for today.</div>
-                                </div>
-                            </td>
-                        </tr>
-                        {% endif %}
-                    </tbody>
-                </table>
-            </div>
-        </div>
+        {% include 'today_schedule.html' %}
     </div>
 
-    <!-- ── BOOKINGS SECTION ── -->
     <div id="section-bookings" class="content-section">
         <div class="dashboard-header">
             <h2>All Bookings</h2>

@@ -7,7 +7,7 @@
 ══════════════════════════════════════════════ -->
 <aside class="sidebar" id="sidebar">
     <a href="{{ url_for('main.candidate_dashboard') }}" class="sidebar-logo">
-        <span class="sidebar-brand-name">BluJay Technologies</span>
+        <img src="{{ url_for('static', filename='images/blujay-logo.png') }}" class="sidebar-brand-logo" alt="BluJay Technologies">
     </a>
 
     <div class="sidebar-user">
@@ -40,8 +40,8 @@
 
         <div class="sidebar-divider"></div>
 
-        <a href="{{ url_for('main.change_password') }}" class="sidebar-link">
-            <i class="bi bi-person"></i> Profile
+        <a href="{{ url_for('main.settings') }}" class="sidebar-link">
+            <i class="bi bi-gear"></i> Settings
         </a>
         <a href="{{ url_for('main.logout') }}" class="sidebar-link sidebar-logout">
             <i class="bi bi-box-arrow-right"></i> Sign Out
@@ -57,9 +57,9 @@
         <button class="sidebar-toggle" id="sidebarToggle">
             <i class="bi bi-list"></i>
         </button>
-        <span class="mobile-header-brand">BluJay Technologies</span>
     </div>
     <div class="header-actions">
+        <img src="{{ url_for('static', filename='images/blujay-logo.png') }}" class="booking-brand-logo" alt="BluJay Technologies">
         <button class="btn btn-primary btn-sm candidate-nav-link" data-section="available-slots">
             <i class="bi bi-plus"></i> Book Interview
         </button>
@@ -177,21 +177,33 @@
         <!-- ── AVAILABLE SLOTS (BOOK INTERVIEW) SECTION ── -->
         <div id="section-available-slots" class="content-section">
             <div class="dashboard-header">
-                <h2>Book Interview Slot</h2>
+                <div>
+                    <h2>Book Interview Slot</h2>
+                    <p class="section-description">Choose a convenient date, then reserve an available time.</p>
+                </div>
             </div>
 
-            <div class="panel">
+            <div class="panel booking-panel">
                 <div class="panel-header">
-                    <span class="panel-title">Select a Date &amp; Time Slot</span>
+                    <div>
+                        <span class="panel-title">Select a Date &amp; Time Slot</span>
+                        <span class="panel-subtitle">Slots are updated in real time.</span>
+                    </div>
                 </div>
                 <div class="panel-body">
                     <div class="form-group" style="max-width:280px;margin-bottom:20px;">
                         <label for="interviewDateSelector">Interview Date</label>
-                        <input type="date" id="interviewDateSelector" class="form-control">
+                        <input type="date" id="interviewDateSelector" class="form-control" aria-describedby="slotDateHelp">
                         <div style="font-size:11px;color:var(--c-text-muted);margin-top:4px;">
-                            Select a date to see available slots
+                            <span id="slotDateHelp">Select a date to see available slots.</span>
                         </div>
                     </div>
+                    <div class="date-shortcuts" aria-label="Quick date selection">
+                        <button type="button" class="date-shortcut" data-date-offset="1">Tomorrow</button>
+                        <button type="button" class="date-shortcut" data-date-offset="3">In 3 days</button>
+                        <button type="button" class="date-shortcut" data-date-offset="7">Next week</button>
+                    </div>
+                    <div id="slotLoadStatus" class="visually-hidden" aria-live="polite"></div>
                     <div class="table-responsive">
                         <table class="table table-hover" id="availableSlotsTable">
                             <thead>
@@ -214,9 +226,9 @@
                                         <span class="badge bg-danger">🔴 Fully Booked</span>
                                         {% endif %}
                                     </td>
-                                    <td data-label=\Date\>{{ block.interview_date }}</td>
-                                    <td data-label=\Start Time\>{{ block.start_time }}</td>
-                                    <td data-label=\End Time\>{{ block.end_time }}</td>
+                                    <td data-label="Date">{{ block.interview_date }}</td>
+                                    <td data-label="Start time">{{ block.start_time }}</td>
+                                    <td data-label="End time">{{ block.end_time }}</td>
                                     <td data-label="Availability">
                                         {% if block.available > 0 %}
                                         <button type="button" class="btn btn-primary btn-sm book-slot-btn"
@@ -657,72 +669,6 @@
                 document.getElementById('bookingTab2').style.display = 'none';
                 document.getElementById('bookingFooter2').style.display = 'none';
             });
-        }
-
-        // ── Date selector: load available slots ──
-        var interviewDateSelector = document.getElementById('interviewDateSelector');
-        if (interviewDateSelector) {
-            // Restore saved date
-            var savedDate = sessionStorage.getItem('candidateSelectedDate');
-            if (savedDate) {
-                interviewDateSelector.value = savedDate;
-                setTimeout(function () {
-                    interviewDateSelector.dispatchEvent(new Event('change'));
-                }, 100);
-            }
-
-            interviewDateSelector.addEventListener('change', function () {
-                sessionStorage.setItem('candidateSelectedDate', this.value);
-                var selectedDate = this.value;
-                if (!selectedDate) return;
-                var tbody = document.querySelector('#availableSlotsTable tbody');
-                tbody.innerHTML = '<tr><td colspan="5" class="text-center"><div class="spinner-border spinner-border-sm" role="status"></div> Loading slots…</td></tr>';
-                var xhr = new XMLHttpRequest();
-                xhr.open('GET', '/available-slots-by-date?interview_date=' + selectedDate, true);
-                xhr.setRequestHeader('X-Requested-With', 'XMLHttpRequest');
-                xhr.onload = function () {
-                    if (xhr.status === 200) {
-                        var response = JSON.parse(xhr.responseText);
-                        if (response.success) {
-                            updateAvailableSlotsTable(response.earth_slots, response.moon_slots);
-                        } else {
-                            tbody.innerHTML = '<tr><td colspan="5" class="text-center text-danger">' + response.error + '</td></tr>';
-                        }
-                    } else {
-                        tbody.innerHTML = '<tr><td colspan="5" class="text-center text-danger">Error loading slots.</td></tr>';
-                    }
-                };
-                xhr.onerror = function () {
-                    tbody.innerHTML = '<tr><td colspan="5" class="text-center text-danger">Error loading slots.</td></tr>';
-                };
-                xhr.send();
-            });
-        }
-
-        function updateAvailableSlotsTable(earthSlots, moonSlots) {
-            var tbody = document.querySelector('#availableSlotsTable tbody');
-            var allSlots = earthSlots.concat(moonSlots);
-            if (allSlots.length === 0) {
-                tbody.innerHTML = '<tr><td colspan="5"><div class="empty-state"><div class="empty-state-icon"><i class="bi bi-calendar-x"></i></div><div class="empty-state-title">No slots available</div><div class="empty-state-sub">No slots available for this date.</div></div></td></tr>';
-                return;
-            }
-            var html = '';
-            allSlots.forEach(function (slot) {
-                html += '<tr>';
-                html += '<td><span class="badge bg-secondary">' + slot.license_name + '</span></td>';
-                html += '<td>' + slot.interview_date + '</td>';
-                html += '<td>' + slot.start_time + '</td>';
-                html += '<td>' + slot.end_time + '</td>';
-                html += '<td><button type="button" class="btn btn-primary btn-sm book-slot-btn" ';
-                html += 'data-bs-toggle="modal" data-bs-target="#bookingModal" ';
-                html += 'data-slot-id="' + slot.id + '" ';
-                html += 'data-slot-date="' + slot.interview_date + '" ';
-                html += 'data-slot-start="' + slot.start_time + '" ';
-                html += 'data-slot-end="' + slot.end_time + '" ';
-                html += 'data-slot-license="' + slot.license_name + '">Book</button></td>';
-                html += '</tr>';
-            });
-            tbody.innerHTML = html;
         }
 
         // ── Book slot button: fill modal ──

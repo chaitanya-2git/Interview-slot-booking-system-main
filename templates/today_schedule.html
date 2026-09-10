@@ -1,0 +1,21 @@
+﻿<link rel="stylesheet" href="{{ url_for('static', filename='css/today-schedule.css', v='1') }}">
+{% macro interview_card(booking) %}
+<article class="today-interview">
+    <div class="today-time"><i class="bi bi-clock"></i> {{ booking.start_time }} – {{ booking.end_time }}</div>
+    <div class="today-person"><strong>{{ booking.user_name }}</strong><span>{{ booking.technology or 'Technical interview' }} · {{ booking.interview_round or 'Interview' }} · {{ booking.license_name }}</span></div>
+    <span class="badge {{ 'bg-success' if booking.booking_status == 'confirmed' else ('bg-danger' if booking.booking_status == 'cancelled' else 'bg-info') }}">{{ booking.booking_status|title }}</span>
+    <div class="today-actions"><a class="btn btn-secondary btn-sm" href="{{ url_for('main.candidate_history', user_id=booking.user_id) }}">View</a>{% if booking.booking_status == 'confirmed' and not booking.interview_completed %}<a class="btn btn-primary btn-sm" href="{{ url_for('main.complete_interview_route', booking_id=booking.id) }}">Complete</a>{% endif %}</div>
+</article>
+{% endmacro %}
+<section class="panel today-schedule" aria-label="Today's interview schedule">
+    <header class="panel-header"><div><h2 class="panel-title">Today's Interviews</h2><p class="today-subtitle">10:00 AM – 7:00 PM · India Standard Time</p></div><span class="today-count">{{ todays_bookings|length }} interviews</span></header>
+    <nav class="today-hours" aria-label="Jump to interview hour">
+        {% for slot in today_schedule %}<a href="#today-hour-{{ slot.hour }}" class="{{ 'has-interviews' if slot.bookings else '' }}"><strong>{{ slot.label }}</strong><span>{{ slot.bookings|length }} interviews</span></a>{% endfor %}
+    </nav>
+    <div class="today-agenda">
+    {% for slot in today_schedule %}
+        <section class="today-hour-row" id="today-hour-{{ slot.hour }}" aria-label="{{ slot.label }} interviews"><h3>{{ slot.label }}</h3><div class="today-hour-items">{% for booking in slot.bookings %}{{ interview_card(booking) }}{% else %}<p class="today-free">No interviews scheduled</p>{% endfor %}</div></section>
+    {% endfor %}
+    {% if other_today_bookings %}<section class="today-hour-row"><h3>Other times</h3><div class="today-hour-items">{% for booking in other_today_bookings %}{{ interview_card(booking) }}{% endfor %}</div></section>{% endif %}
+    </div>
+</section>

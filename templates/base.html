@@ -16,8 +16,9 @@
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
     <!-- Custom Design System -->
     <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/preferences.css') }}">
 </head>
-<body>
+<body class="{% if account_preferences.larger_text %}pref-larger-text {% endif %}{% if account_preferences.reduce_motion %}pref-reduce-motion{% endif %}">
 
 <!-- Toast container for flash messages -->
 <div class="toast-container" id="toastContainer"></div>

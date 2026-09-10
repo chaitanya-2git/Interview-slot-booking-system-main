@@ -22,6 +22,32 @@ from database import (
 
 app_routes = Blueprint('main', __name__)
 
+
+def password_change_required():
+    """Keep first-login accounts on the password-change screen until complete."""
+    if 'user_id' not in session:
+        return False
+    user = get_user_by_id(session['user_id'])
+    return bool(user and user.get('force_password_change'))
+
+
+@app_routes.before_request
+def enforce_password_change():
+    """Prevent forced-change accounts from bypassing the password page by URL."""
+    if session.get('user_id'):
+        current_user = get_user_by_id(session['user_id'])
+        if not current_user or not current_user['is_active']:
+            session.clear()
+            return redirect(url_for('main.login'))
+    if session.get('user_id'):
+        session['user_role'] = current_user['role']
+    allowed_endpoints = {
+        'main.home', 'main.login', 'main.logout', 'main.register',
+        'main.change_password'
+    }
+    if request.endpoint not in allowed_endpoints and password_change_required():
+        return redirect(url_for('main.change_password'))
+
 @app_routes.route('/', methods=['GET'])
 def home():
     return redirect(url_for('main.login'))
@@ -51,7 +77,7 @@ def login():
                 flash('You must change your password before continuing.', 'info')
                 return redirect(url_for('main.change_password'))
             
-            if user['role'] == 'hr':
+            if user['role'] in ('hr', 'admin'):
                 return redirect(url_for('main.hr_dashboard'))
             else:
                 return redirect(url_for('main.candidate_dashboard'))
@@ -88,7 +114,7 @@ def change_password():
         flash('Password changed successfully!', 'success')
         
         # Redirect to appropriate dashboard
-        if session['user_role'] == 'hr':
+        if session['user_role'] in ('hr', 'admin'):
             return redirect(url_for('main.hr_dashboard'))
         else:
             return redirect(url_for('main.candidate_dashboard'))
@@ -97,37 +123,42 @@ def change_password():
 
 @app_routes.route('/hr-dashboard')
 def hr_dashboard():
-    if 'user_id' not in session or session['user_role'] != 'hr':
+    if 'user_id' not in session or session['user_role'] not in ('hr', 'admin'):
         return redirect(url_for('main.home'))
+    if password_change_required():
+        return redirect(url_for('main.change_password'))
     slots = get_all_interview_slots()
     bookings = get_all_bookings()
     todays_bookings = get_todays_interviews()
+    from database import build_today_schedule
+    today_schedule, other_today_bookings = build_today_schedule(todays_bookings)
     licenses = get_all_licenses()
     stats = get_dashboard_stats()
     notifications = get_notifications(session['user_id'], limit=10)
     unread_count = get_unread_notification_count(session['user_id'])
-    return render_template('hr_dashboard.html', user_name=session['user_name'], slots=slots, bookings=bookings, todays_bookings=todays_bookings, licenses=licenses, stats=stats, notifications=notifications, unread_count=unread_count)
+    return render_template('hr_dashboard.html', user_name=session['user_name'], slots=slots, bookings=bookings, todays_bookings=todays_bookings, today_schedule=today_schedule, other_today_bookings=other_today_bookings, licenses=licenses, stats=stats, notifications=notifications, unread_count=unread_count)
 
 @app_routes.route('/todays-interviews')
 def todays_interviews():
-    if 'user_id' not in session or session['user_role'] != 'hr':
+    if 'user_id' not in session or session['user_role'] not in ('hr', 'admin'):
         return redirect(url_for('main.home'))
     todays_bookings = get_todays_interviews()
+    from database import build_today_schedule
+    today_schedule, other_today_bookings = build_today_schedule(todays_bookings)
     licenses = get_all_licenses()
     stats = get_dashboard_stats()
     notifications = get_notifications(session['user_id'], limit=10)
     unread_count = get_unread_notification_count(session['user_id'])
-    return render_template('hr_dashboard.html', user_name=session['user_name'], todays_bookings=todays_bookings, licenses=licenses, stats=stats, notifications=notifications, unread_count=unread_count)
+    return render_template('hr_dashboard.html', user_name=session['user_name'], todays_bookings=todays_bookings, today_schedule=today_schedule, other_today_bookings=other_today_bookings, licenses=licenses, stats=stats, notifications=notifications, unread_count=unread_count)
 
 @app_routes.route('/candidate-dashboard')
 def candidate_dashboard():
     if 'user_id' not in session or session['user_role'] != 'candidate':
         return redirect(url_for('main.home'))
+    if password_change_required():
+        return redirect(url_for('main.change_password'))
 
     available_slots = []
-
-    print("Candidate available slots:", len(available_slots))
-    print(available_slots[:3])
 
     license1_slots = [
         slot for slot in available_slots
@@ -250,7 +281,7 @@ def book_slot():
     if booking_id == 'max_bookings_reached':
         flash('Maximum booking limit reached. Please contact the administrator.', 'error')
         # Create notification for HR users
-        hr_users = [u for u in get_all_users() if u['role'] == 'hr']
+        hr_users = [u for u in get_all_users() if u['role'] in ('hr', 'admin')]
         for hr in hr_users:
             create_notification(hr['id'], 'booking_failed', f'Candidate attempted to book but reached max limit.')
     elif booking_id == 'fully_booked':
@@ -260,13 +291,13 @@ def book_slot():
         # Create notification for candidate
         create_notification(session['user_id'], 'booking_success', 'Your interview slot has been booked successfully!')
         # Create notification for HR users
-        hr_users = [u for u in get_all_users() if u['role'] == 'hr']
+        hr_users = [u for u in get_all_users() if u['role'] in ('hr', 'admin')]
         for hr in hr_users:
             create_notification(hr['id'], 'new_booking', f'New candidate booked an interview slot.')
     elif booking_id == 'max_bookings_reached':
         flash('Maximum booking limit reached. Please contact the administrator.', 'error')
         # Create notification for HR users
-        hr_users = [u for u in get_all_users() if u['role'] == 'hr']
+        hr_users = [u for u in get_all_users() if u['role'] in ('hr', 'admin')]
         for hr in hr_users:
             create_notification(hr['id'], 'max_bookings', f'A candidate reached maximum booking limit.')
     else:
@@ -276,7 +307,7 @@ def book_slot():
 
 @app_routes.route('/create-slot', methods=['GET', 'POST'])
 def create_slot():
-    if 'user_id' not in session or session['user_role'] != 'hr':
+    if 'user_id' not in session or session['user_role'] not in ('hr', 'admin'):
         return redirect(url_for('main.home'))
     
     licenses = get_all_licenses()
@@ -296,7 +327,7 @@ def create_slot():
 
 @app_routes.route('/edit-slot/<int:slot_id>', methods=['GET', 'POST'])
 def edit_slot(slot_id):
-    if 'user_id' not in session or session['user_role'] != 'hr':
+    if 'user_id' not in session or session['user_role'] not in ('hr', 'admin'):
         return redirect(url_for('main.home'))
     
     slot = get_interview_slot_by_id(slot_id)
@@ -321,7 +352,7 @@ def edit_slot(slot_id):
 
 @app_routes.route('/delete-slot/<int:slot_id>', methods=['POST'])
 def delete_slot(slot_id):
-    if 'user_id' not in session or session['user_role'] != 'hr':
+    if 'user_id' not in session or session['user_role'] not in ('hr', 'admin'):
         return redirect(url_for('main.home'))
     
     delete_interview_slot(slot_id)
@@ -334,7 +365,7 @@ def reschedule_interview_route(booking_id):
     is_ajax = request.headers.get('X-Requested-With') == 'XMLHttpRequest'
     print(f"DEBUG: /reschedule/{booking_id} - Method: {request.method}, is_ajax: {is_ajax}, X-Requested-With: {request.headers.get('X-Requested-With')}")
 
-    if 'user_id' not in session or session['user_role'] != 'hr':
+    if 'user_id' not in session or session['user_role'] not in ('hr', 'admin'):
         print(f"DEBUG: Unauthorized - user_id in session: {'user_id' in session}, user_role: {session.get('user_role')}")
         if is_ajax:
             return jsonify({'success': False, 'error': 'Unauthorized'}), 401
@@ -476,7 +507,7 @@ def candidate_change_slot(booking_id):
                     return jsonify({'success': True, 'message': 'Slot changed successfully!'})
                 flash('Slot changed successfully!', 'success')
                 # Create notification for HR users
-                hr_users = [u for u in get_all_users() if u['role'] == 'hr']
+                hr_users = [u for u in get_all_users() if u['role'] in ('hr', 'admin')]
                 for hr in hr_users:
                     create_notification(hr['id'], 'slot_changed', f'A candidate changed their interview slot.')
                 return redirect(url_for('main.candidate_dashboard', _anchor='my-bookings'))
@@ -500,7 +531,7 @@ def candidate_change_slot(booking_id):
     
 @app_routes.route('/edit-booking/<int:booking_id>', methods=['GET', 'POST'])
 def edit_booking(booking_id):
-    if 'user_id' not in session or session['user_role'] != 'hr':
+    if 'user_id' not in session or session['user_role'] not in ('hr', 'admin'):
         return redirect(url_for('main.home'))
     
     booking = get_booking_by_id(booking_id)
@@ -523,7 +554,7 @@ def edit_booking(booking_id):
 
 @app_routes.route('/create-candidate-slot/<int:user_id>', methods=['GET', 'POST'])
 def create_candidate_slot(user_id):
-    if 'user_id' not in session or session['user_role'] != 'hr':
+    if 'user_id' not in session or session['user_role'] not in ('hr', 'admin'):
         return redirect(url_for('main.home'))
 
     candidate = get_user_by_id(user_id)
@@ -576,7 +607,7 @@ def create_candidate_slot(user_id):
 
 @app_routes.route('/cancel-booking/<int:booking_id>', methods=['POST'])
 def cancel_booking_route(booking_id):
-    if 'user_id' not in session or session['user_role'] != 'hr':
+    if 'user_id' not in session or session['user_role'] not in ('hr', 'admin'):
         return redirect(url_for('main.home'))
     
     booking = get_booking_by_id(booking_id)
@@ -613,7 +644,7 @@ def candidate_cancel_booking_route(booking_id):
     if result:
         flash('Booking cancelled successfully!', 'success')
         # Create notification for HR users
-        hr_users = [u for u in get_all_users() if u['role'] == 'hr']
+        hr_users = [u for u in get_all_users() if u['role'] in ('hr', 'admin')]
         for hr in hr_users:
             create_notification(hr['id'], 'booking_cancelled', f'A candidate cancelled their interview booking.')
     else:
@@ -628,14 +659,14 @@ def mark_notification_read_route(notification_id):
     
     mark_notification_read(notification_id)
     
-    if session['user_role'] == 'hr':
+    if session['user_role'] in ('hr', 'admin'):
         return redirect(url_for('main.hr_dashboard'))
     else:
         return redirect(url_for('main.candidate_dashboard'))
 
 @app_routes.route('/candidate-history/<int:user_id>')
 def candidate_history(user_id):
-    if 'user_id' not in session or session['user_role'] != 'hr':
+    if 'user_id' not in session or session['user_role'] not in ('hr', 'admin'):
         return redirect(url_for('main.home'))
     
     candidate = get_user_by_id(user_id)
@@ -646,7 +677,7 @@ def candidate_history(user_id):
 
 @app_routes.route('/complete-interview/<int:booking_id>', methods=['GET', 'POST'])
 def complete_interview_route(booking_id):
-    if 'user_id' not in session or session['user_role'] != 'hr':
+    if 'user_id' not in session or session['user_role'] not in ('hr', 'admin'):
         return redirect(url_for('main.home'))
     
     booking = get_booking_by_id(booking_id)
@@ -669,7 +700,7 @@ def complete_interview_route(booking_id):
 
 @app_routes.route('/assign-support/<int:booking_id>', methods=['POST'])
 def assign_support_person_route(booking_id):
-    if 'user_id' not in session or session['user_role'] != 'hr':
+    if 'user_id' not in session or session['user_role'] not in ('hr', 'admin'):
         return redirect(url_for('main.home'))
     
     support_person = request.form.get('support_person')
@@ -761,7 +792,7 @@ def get_slots_by_date_route():
 
 @app_routes.route('/manage-candidates')
 def manage_candidates():
-    if 'user_id' not in session or session['user_role'] != 'hr':
+    if 'user_id' not in session or session['user_role'] not in ('hr', 'admin'):
         return redirect(url_for('main.home'))
     
     candidates = get_candidates()
@@ -769,7 +800,7 @@ def manage_candidates():
 
 @app_routes.route('/create-candidate', methods=['GET', 'POST'])
 def create_candidate():
-    if 'user_id' not in session or session['user_role'] != 'hr':
+    if 'user_id' not in session or session['user_role'] not in ('hr', 'admin'):
         return redirect(url_for('main.home'))
     
     if request.method == 'POST':
@@ -795,7 +826,7 @@ def create_candidate():
 
 @app_routes.route('/edit-candidate/<int:user_id>', methods=['GET', 'POST'])
 def edit_candidate(user_id):
-    if 'user_id' not in session or session['user_role'] != 'hr':
+    if 'user_id' not in session or session['user_role'] not in ('hr', 'admin'):
         return redirect(url_for('main.home'))
     
     candidate = get_user_by_id(user_id)
@@ -825,7 +856,7 @@ def edit_candidate(user_id):
 
 @app_routes.route('/toggle-candidate-status/<int:user_id>', methods=['POST'])
 def toggle_candidate_status(user_id):
-    if 'user_id' not in session or session['user_role'] != 'hr':
+    if 'user_id' not in session or session['user_role'] not in ('hr', 'admin'):
         return redirect(url_for('main.home'))
     
     candidate = get_user_by_id(user_id)
@@ -845,7 +876,7 @@ def toggle_candidate_status(user_id):
 
 @app_routes.route('/reset-candidate-password/<int:user_id>', methods=['GET', 'POST'])
 def reset_candidate_password(user_id):
-    if 'user_id' not in session or session['user_role'] != 'hr':
+    if 'user_id' not in session or session['user_role'] not in ('hr', 'admin'):
         return redirect(url_for('main.home'))
     
     candidate = get_user_by_id(user_id)
@@ -866,3 +897,156 @@ def reset_candidate_password(user_id):
         return redirect(url_for('main.manage_candidates'))
     
     return render_template('reset_candidate_password.html', candidate=candidate)
+
+@app_routes.app_context_processor
+def account_preferences():
+    from database import get_db_connection
+    preferences = {}
+    if session.get('user_id'):
+        conn = get_db_connection()
+        try:
+            row = conn.execute('SELECT larger_text, reduce_motion FROM user_preferences WHERE user_id = ?', (session['user_id'],)).fetchone()
+            if row:
+                preferences = dict(row)
+        finally:
+            conn.close()
+    return {'account_preferences': preferences}
+
+
+@app_routes.route('/settings', methods=['GET', 'POST'])
+def settings():
+    import re
+    import secrets
+    import sqlite3
+    from werkzeug.security import check_password_hash
+    from database import get_db_connection
+    if not session.get('user_id'):
+        return redirect(url_for('main.login'))
+    user = get_user_by_id(session['user_id'])
+    if not user or not user['is_active']:
+        session.clear()
+        return redirect(url_for('main.login'))
+    session.setdefault('settings_csrf', secrets.token_urlsafe(32))
+    error = None
+    if request.method == 'POST':
+        if not secrets.compare_digest(request.form.get('csrf_token', ''), session['settings_csrf']):
+            return 'Please reload Settings and try again.', 400
+        action = request.form.get('action')
+        if action == 'profile':
+            name = request.form.get('name', '').strip()
+            email = request.form.get('email', '').strip().lower()
+            if not name or len(name) > 100:
+                error = 'Enter a name between 1 and 100 characters.'
+            elif len(email) > 254 or not re.fullmatch(r'[^\s@]+@[^\s@]+\.[^\s@]+', email):
+                error = 'Enter a valid email address.'
+            elif email != user['email'] and not check_password_hash(user['password'], request.form.get('current_password', '')):
+                error = 'Enter your current password to change your email address.'
+            else:
+                conn = get_db_connection()
+                try:
+                    duplicate = conn.execute('SELECT id FROM users WHERE lower(email) = ? AND id != ?', (email, user['id'])).fetchone()
+                    if duplicate:
+                        error = 'That email address is already in use.'
+                    else:
+                        with conn:
+                            conn.execute('UPDATE users SET name = ?, email = ? WHERE id = ?', (name, email, user['id']))
+                        session['user_name'] = name
+                except sqlite3.IntegrityError:
+                    error = 'That email address is already in use.'
+                finally:
+                    conn.close()
+        elif action == 'password':
+            password = request.form.get('new_password', '')
+            if not check_password_hash(user['password'], request.form.get('current_password', '')):
+                error = 'Your current password is incorrect.'
+            elif len(password) < 8:
+                error = 'Use at least 8 characters for your new password.'
+            elif password != request.form.get('confirm_password'):
+                error = 'The new passwords do not match.'
+            elif check_password_hash(user['password'], password):
+                error = 'Choose a password different from your current password.'
+            else:
+                change_user_password(user['id'], password)
+        elif action == 'preferences':
+            conn = get_db_connection()
+            try:
+                with conn:
+                    conn.execute('INSERT INTO user_preferences (user_id, larger_text, reduce_motion) VALUES (?, ?, ?) ON CONFLICT(user_id) DO UPDATE SET larger_text = excluded.larger_text, reduce_motion = excluded.reduce_motion', (user['id'], int(request.form.get('larger_text') == 'on'), int(request.form.get('reduce_motion') == 'on')))
+            finally:
+                conn.close()
+        else:
+            error = 'Choose a valid settings action.'
+        if not error:
+            flash('Settings saved successfully.', 'success')
+            return redirect(url_for('main.settings'))
+    return render_template('settings.html', user=user, settings_error=error)
+
+
+@app_routes.route('/delete-candidate/<int:user_id>', methods=['GET', 'POST'])
+def delete_candidate(user_id):
+    import secrets
+    from database import delete_candidate_account
+    actor = get_user_by_id(session['user_id']) if session.get('user_id') else None
+    if not actor or actor['role'] not in ('hr', 'admin') or not actor['is_active']:
+        return 'Only HR or administrators can delete candidates.', 403
+    candidate = get_user_by_id(user_id)
+    if not candidate or candidate['role'] != 'candidate':
+        return 'Candidate not found.', 404
+    session.setdefault('delete_candidate_csrf', secrets.token_urlsafe(32))
+    error = None
+    if request.method == 'POST':
+        if not secrets.compare_digest(request.form.get('csrf_token', ''), session['delete_candidate_csrf']):
+            return 'Please reload the confirmation page and try again.', 400
+        if request.form.get('confirmation') != candidate['email']:
+            error = 'Enter the candidate email exactly to confirm deletion.'
+        elif delete_candidate_account(user_id):
+            flash('Candidate and related records deleted successfully.', 'success')
+            return redirect(url_for('main.manage_candidates'))
+        else:
+            return 'Candidate not found.', 404
+    return render_template('delete_candidate.html', candidate=candidate, deletion_error=error)
+
+
+@app_routes.route('/manage-admins', methods=['GET', 'POST'])
+def manage_admins():
+    import re
+    import secrets
+    from database import get_db_connection
+    actor = get_user_by_id(session['user_id']) if session.get('user_id') else None
+    if not actor or actor['role'] != 'admin' or not actor['is_active']:
+        return 'Only administrators can manage admin accounts.', 403
+    session.setdefault('admin_csrf', secrets.token_urlsafe(32))
+    error = None
+    if request.method == 'POST':
+        if not secrets.compare_digest(request.form.get('csrf_token', ''), session['admin_csrf']):
+            return 'Please reload Manage Admins and try again.', 400
+        name = request.form.get('name', '').strip()
+        email = request.form.get('email', '').strip().lower()
+        password = request.form.get('password', '')
+        if not name or len(name) > 100:
+            error = 'Enter a name between 1 and 100 characters.'
+        elif len(email) > 254 or not re.fullmatch(r'[^\s@]+@[^\s@]+\.[^\s@]+', email):
+            error = 'Enter a valid email address.'
+        elif len(password) < 8:
+            error = 'Use at least 8 characters for the temporary password.'
+        elif password != request.form.get('confirm_password'):
+            error = 'The passwords do not match.'
+        else:
+            conn = get_db_connection()
+            try:
+                duplicate = conn.execute('SELECT id FROM users WHERE lower(email) = ?', (email,)).fetchone()
+            finally:
+                conn.close()
+            if duplicate:
+                error = 'That email address is already in use.'
+            elif register_user(name, email, password, 'admin', is_active=1, force_password_change=1):
+                flash('Admin created. Share their login details; they must change the password on first login.', 'success')
+                return redirect(url_for('main.manage_admins'))
+            else:
+                error = 'That email address is already in use.'
+    conn = get_db_connection()
+    try:
+        admins = conn.execute("SELECT id, name, email, is_active, force_password_change FROM users WHERE role = 'admin' ORDER BY id").fetchall()
+    finally:
+        conn.close()
+    return render_template('manage_admins.html', admins=admins, admin_error=error)

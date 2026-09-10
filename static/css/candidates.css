@@ -1,0 +1,72 @@
+﻿.candidate-manager { max-width: 1180px; margin: 0 auto; padding: 24px 32px 56px; color: #17315c; }
+.cm-nav { display: flex; align-items: center; justify-content: space-between; padding-bottom: 24px; margin-bottom: 32px; border-bottom: 1px solid #dce5f1; }
+.cm-nav img { width: 140px; height: 44px; object-fit: contain; }
+.cm-back { display: inline-flex; align-items: center; gap: 8px; font-weight: 600; color: #476184; font-size: 13px; }
+.cm-heading { display: flex; align-items: center; justify-content: space-between; gap: 24px; margin-bottom: 28px; }
+.cm-eyebrow { color: #2468c3; font-size: 10px; font-weight: 800; letter-spacing: 1.8px; margin: 0 0 10px; }
+.cm-heading h1 { font-size: clamp(25px, 3vw, 34px); font-weight: 750; letter-spacing: -1px; margin: 0 0 10px; }
+.cm-heading p:not(.cm-eyebrow) { font-size: 14px; color: #647792; line-height: 1.6; margin: 0; }
+.cm-heading > .btn { flex-shrink: 0; }
+.cm-stats { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 16px; margin-bottom: 30px; }
+.cm-stats > div { display: flex; align-items: center; gap: 14px; padding: 20px; background: #fff; border: 1px solid #e0e8f3; border-radius: 16px; }
+.cm-stat-icon { display: grid; place-items: center; width: 44px; height: 44px; flex-shrink: 0; background: #eaf2ff; color: #2468c3; border-radius: 13px; font-size: 21px; }
+.cm-stat-icon.cm-green { color: #087f65; background: #e7f7f0; }
+.cm-stat-icon.cm-amber { color: #a66915; background: #fff5e3; }
+.cm-stats strong { display: block; font-size: 26px; line-height: 1.2; }
+.cm-stats div > span:not(.cm-stat-icon) { display: block; color: #647792; font-size: 12px; margin-top: 5px; }
+.cm-tools { display: flex; justify-content: space-between; align-items: center; gap: 20px; margin-bottom: 20px; }
+.cm-tools h2 { font-size: 18px; margin: 0 0 6px; font-weight: 700; }
+.cm-tools p { font-size: 12px; color: #647792; margin: 0; }
+.cm-filters { display: flex; gap: 10px; }
+.cm-search { position: relative; }
+.cm-search > i { position: absolute; left: 14px; top: 14px; color: #7085a3; }
+.cm-search input, .cm-filters select { height: 44px; background: #fff; border: 1px solid #d9e3f0; border-radius: 10px; color: #17315c; font: inherit; font-size: 13px; }
+.cm-search input { padding: 0 12px 0 39px; width: 265px; }
+.cm-filters select { padding: 0 12px; }
+.candidate-manager :is(a, button, input, select):focus-visible { outline: 3px solid #74a9f4; outline-offset: 3px; }
+.cm-grid { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 18px; }
+.cm-card { min-width: 0; background: #fff; border: 1px solid #dfe7f3; border-radius: 18px; padding: 22px; box-shadow: 0 5px 18px rgba(23,49,92,.035); }
+.cm-card-top { display: flex; align-items: center; justify-content: space-between; margin-bottom: 18px; }
+.cm-avatar { display: grid; place-items: center; width: 46px; height: 46px; border-radius: 14px; background: #edf3ff; color: #2564be; font-size: 20px; font-weight: 700; }
+.cm-status { display: inline-flex; align-items: center; gap: 6px; padding: 5px 9px; border-radius: 20px; font-size: 11px; font-weight: 650; }
+.cm-status > span { width: 6px; height: 6px; border-radius: 50%; background: currentColor; }
+.cm-status.is-active { color: #07806b; background: #eaf9f2; }
+.cm-status.is-inactive { color: #986018; background: #fff5e6; }
+.cm-card h3 { font-size: 16px; font-weight: 700; margin: 0 0 5px; line-height: 1.4; overflow-wrap: anywhere; }
+.cm-id { font-size: 11px; color: #8191a8; margin-bottom: 16px; }
+.cm-email { display: flex; gap: 8px; align-items: flex-start; font-size: 12px; color: #5d718e; margin: 0 0 22px; }
+.cm-email span { min-width: 0; overflow-wrap: anywhere; }
+.cm-actions { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 8px; border-top: 1px solid #edf1f7; padding-top: 16px; }
+.cm-actions a, .cm-actions button { display: flex; align-items: center; justify-content: center; gap: 6px; width: 100%; min-height: 40px; padding: 8px 4px; border: 1px solid #e2e9f3; border-radius: 8px; background: #f8faff; color: #456082; font: inherit; font-size: 11px; font-weight: 600; text-decoration: none; cursor: pointer; }
+.cm-actions form { margin: 0; }
+.cm-actions a:hover, .cm-actions button:hover { background: #eaf2ff; border-color: #aecbf4; color: #175fc5; }
+.cm-actions .cm-deactivate { color: #ad5960; background: #fffafb; }
+.cm-actions .cm-activate { color: #087f65; background: #f0fbf5; }
+.cm-empty { text-align: center; padding: 48px 20px; background: #fff; border: 1px dashed #cad8eb; border-radius: 18px; }
+.cm-empty > i { font-size: 32px; color: #6392cf; }
+.cm-empty h3 { font-size: 18px; margin: 15px 0 8px; }
+.cm-empty p { color: #647792; font-size: 13px; }
+.candidate-manager [hidden] { display: none !important; }
+@media (max-width: 1000px) { .cm-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
+@media (max-width: 720px) {
+  .candidate-manager { padding: 18px 18px 36px; }
+  .cm-nav { padding-bottom: 16px; margin-bottom: 24px; }
+  .cm-nav img { width: 120px; height: 38px; }
+  .cm-heading { align-items: stretch; flex-direction: column; gap: 18px; }
+  .cm-heading > .btn { width: 100%; }
+  .cm-stats { gap: 8px; margin-bottom: 26px; }
+  .cm-stats > div { flex-direction: column; align-items: flex-start; padding: 12px 10px; gap: 10px; border-radius: 12px; }
+  .cm-stat-icon { width: 32px; height: 32px; font-size: 16px; border-radius: 9px; }
+  .cm-stats strong { font-size: 23px; }
+  .cm-stats div > span:not(.cm-stat-icon) { font-size: 10px; line-height: 1.4; }
+  .cm-tools { align-items: stretch; flex-direction: column; gap: 14px; }
+  .cm-filters { width: 100%; gap: 8px; }
+  .cm-search { flex: 1; min-width: 0; }
+  .cm-search input { width: 100%; font-size: 12px; }
+  .cm-filters select { width: 110px; font-size: 12px; padding: 0 6px; }
+  .cm-grid { grid-template-columns: 1fr; gap: 14px; }
+  .cm-card { padding: 20px; }
+  .cm-actions a, .cm-actions button { min-height: 44px; font-size: 12px; }
+}
+.cm-delete { display: flex; align-items: center; justify-content: center; gap: 7px; color: #b43e50; font-size: 12px; font-weight: 600; min-height: 44px; margin-top: 12px; border-radius: 8px; border: 1px solid #f1d9de; background: #fffafb; text-decoration: none; }
+.cm-delete:hover { color: #912b3b; background: #ffedf0; }

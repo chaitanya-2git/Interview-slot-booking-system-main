@@ -1,0 +1,21 @@
+﻿{% extends 'base.html' %}
+{% block content %}
+<div class="standalone-page">
+    <div class="form-shell" style="width:100%;max-width:500px;">
+        <div class="form-shell-header"><div class="form-shell-title">Delete candidate?</div><p class="form-shell-sub">This permanently removes the account and its interview records.</p></div>
+        <div class="form-shell-body">
+            {% if deletion_error %}<div class="alert alert-danger" role="alert">{{ deletion_error }}</div>{% endif %}
+            <p><strong>{{ candidate.name }}</strong><br><span style="overflow-wrap:anywhere;">{{ candidate.email }}</span></p>
+            <p>Bookings, interview history, notifications, and saved preferences will be deleted. Confirmed slots will become available unless another candidate has booked them.</p>
+            <form method="POST">
+                <input type="hidden" name="csrf_token" value="{{ session.delete_candidate_csrf }}">
+                <div class="form-group"><label for="confirmEmail">Type the candidate's email to confirm</label><input id="confirmEmail" class="form-control" type="email" name="confirmation" required autocomplete="off"></div>
+                <div style="display:flex;flex-wrap:wrap;gap:12px;">
+                    <a class="btn btn-secondary" href="{{ url_for('main.manage_candidates') }}">Keep candidate</a>
+                    <button class="btn btn-danger" type="submit"><i class="bi bi-trash"></i> Delete permanently</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+{% endblock %}

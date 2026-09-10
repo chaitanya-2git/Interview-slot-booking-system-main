@@ -1,0 +1,23 @@
+﻿.today-schedule .panel-header { display:flex; justify-content:space-between; align-items:center; gap:12px; }
+.today-schedule h2 { margin:0; }
+.today-subtitle { margin:6px 0 0; font-size:12px; color:#647792; }
+.today-count { font-size:12px; white-space:nowrap; color:#2468c3; background:#edf3ff; border-radius:20px; padding:7px 11px; }
+.today-hours { display:flex; overflow-x:auto; gap:8px; padding:18px; border-bottom:1px solid #e5edf7; }
+.today-hours a { flex:1 0 90px; display:flex; flex-direction:column; align-items:center; gap:6px; border:1px solid #e1e8f2; border-radius:10px; padding:12px 8px; text-decoration:none; color:#647792; background:#fafcff; }
+.today-hours strong { font-size:12px; white-space:nowrap; }
+.today-hours span { font-size:10px; }
+.today-hours a.has-interviews { background:#edf4ff; border-color:#a9caf7; color:#175fc5; }
+.today-hours a:hover, .today-hours a:focus-visible { background:#dcecff; outline:2px solid #74a9f4; outline-offset:-2px; }
+.today-agenda { padding:0 20px; }
+.today-hour-row { display:grid; grid-template-columns:95px minmax(0,1fr); gap:16px; padding:18px 0; border-bottom:1px solid #edf1f7; scroll-margin-top:90px; }
+.today-hour-row:last-child { border-bottom:0; }
+.today-hour-row h3 { margin:4px 0; font-size:12px; font-weight:700; color:#476184; white-space:nowrap; }
+.today-hour-items { display:grid; gap:10px; min-width:0; }
+.today-free { margin:3px 0; font-size:12px; color:#8392a8; }
+.today-interview { display:flex; align-items:center; flex-wrap:wrap; gap:12px; padding:14px; border:1px solid #e1eaf7; border-left:3px solid #2475d5; border-radius:10px; background:#f9fbff; min-width:0; }
+.today-time { font-size:12px; font-weight:650; color:#2468c3; white-space:nowrap; }
+.today-person { flex:1 1 180px; min-width:0; }
+.today-person strong { display:block; font-size:13px; overflow-wrap:anywhere; }
+.today-person span { display:block; font-size:11px; color:#647792; margin-top:4px; overflow-wrap:anywhere; }
+.today-actions { display:flex; gap:8px; }
+@media(max-width:600px) { .today-schedule .panel-header { align-items:flex-start; flex-direction:column; } .today-agenda { padding:0 14px; } .today-hour-row { grid-template-columns:1fr; gap:10px; padding:15px 0; } .today-hour-row h3 { font-size:13px; } .today-time { width:100%; } .today-person { flex-basis:100%; } .today-actions { margin-left:auto; } .today-hours { padding:14px; } }
