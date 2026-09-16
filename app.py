@@ -5,6 +5,7 @@ from database import create_tables, initialize_default_licenses_and_slots, creat
 
 app = Flask(__name__)
 app.config['TEMPLATES_AUTO_RELOAD'] = True
+app.config['MAX_CONTENT_LENGTH'] = 8 * 1024 * 1024  # 8 MB resume upload limit
 app.secret_key = os.environ.get("SECRET_KEY", "your-secret-key-here")
 
 # Create the database tables
@@ -20,12 +21,18 @@ if default_hr:
     print("DEFAULT HR ACCOUNT CREATED")
     print("=" * 60)
     print(f"Email: {default_hr['email']}")
-    print(f"Temporary Password: {default_hr['temp_password']}")
-    print("Please change this password after first login.")
+    print(f"Password: {default_hr['password']}")
     print("=" * 60)
 
 # Register routes
 app.register_blueprint(app_routes)
+
+
+@app.errorhandler(413)
+def resume_file_too_large(_error):
+    from flask import flash, redirect, request, url_for
+    flash('Resume file is too large. Upload a file smaller than 8 MB.', 'error')
+    return redirect(request.referrer or url_for('main.candidate_profile'))
 
 if __name__ == "__main__":
     port = int(os.environ.get("PORT", 5000))

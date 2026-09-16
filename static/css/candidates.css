@@ -47,6 +47,8 @@
 .cm-empty h3 { font-size: 18px; margin: 15px 0 8px; }
 .cm-empty p { color: #647792; font-size: 13px; }
 .candidate-manager [hidden] { display: none !important; }
+.talent-result-card { padding: 18px; }.talent-result-card .cm-card-top { margin-bottom: 11px; }.talent-result-card h3 { margin-bottom: 4px; }.talent-result-card .cm-email { gap: 7px; margin-bottom: 11px; }.talent-result-card .cm-email i { color: #5880b1; }.cm-avatar.cm-avatar-photo { display: block; padding: 0; object-fit: cover; }.talent-meta { display: flex; flex-wrap: wrap; gap: 7px; margin-bottom: 12px; }.talent-meta span { display: inline-flex; align-items: center; gap: 5px; padding: 5px 8px; border-radius: 999px; background: #f1f6fd; color: #49698f; font-size: 11px; font-weight: 600; }.talent-meta i { color: #286dcc; }.talent-skills { display: flex; align-items: flex-start; gap: 8px; margin: 0 0 14px; color: #456482; font-size: 12px; line-height: 1.5; }.talent-skills i { margin-top: 2px; color: #4e7fba; }.talent-skills span { min-width: 0; overflow-wrap: anywhere; }.talent-result-card .cm-actions { padding-top: 12px; }
+.talent-search-form { display: flex; align-items: end; gap: 14px; margin-bottom: 22px; }.talent-search-form .form-group { flex: 1; margin: 0; }.talent-search-form .form-actions { display: flex; gap: 8px; flex-wrap: wrap; }
 @media (max-width: 1000px) { .cm-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
 @media (max-width: 720px) {
   .candidate-manager { padding: 18px 18px 36px; }
@@ -67,6 +69,7 @@
   .cm-grid { grid-template-columns: 1fr; gap: 14px; }
   .cm-card { padding: 20px; }
   .cm-actions a, .cm-actions button { min-height: 44px; font-size: 12px; }
+  .talent-search-form { align-items: stretch; flex-direction: column; }.talent-search-form .form-actions { display: grid; grid-template-columns: 1fr 1fr; }.talent-search-form .form-actions .btn { width: 100%; }
 }
 .cm-delete { display: flex; align-items: center; justify-content: center; gap: 7px; color: #b43e50; font-size: 12px; font-weight: 600; min-height: 44px; margin-top: 12px; border-radius: 8px; border: 1px solid #f1d9de; background: #fffafb; text-decoration: none; }
 .cm-delete:hover { color: #912b3b; background: #ffedf0; }

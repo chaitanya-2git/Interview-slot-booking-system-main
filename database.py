@@ -1,4 +1,5 @@
 import os
+import re
 import sqlite3
 from werkzeug.security import generate_password_hash, check_password_hash
 
@@ -142,7 +143,11 @@ def migrate_users_table():
         if 'force_password_change' not in column_names:
             # Add force_password_change column with default value 0 (not forced)
             cursor.execute('ALTER TABLE users ADD COLUMN force_password_change INTEGER DEFAULT 0')
-            conn.commit()
+
+        # Passwords set by HR are fixed passwords. Clear legacy flags created
+        # by the earlier temporary-password onboarding flow.
+        cursor.execute('UPDATE users SET force_password_change = 0 WHERE force_password_change != 0')
+        conn.commit()
         
         conn.close()
         
@@ -180,6 +185,35 @@ def create_tables():
             larger_text INTEGER NOT NULL DEFAULT 0,
             reduce_motion INTEGER NOT NULL DEFAULT 0
         )
+    ''')
+
+    cursor.execute('''
+        CREATE TABLE IF NOT EXISTS candidate_profiles (
+            user_id INTEGER PRIMARY KEY REFERENCES users(id),
+            phone TEXT,
+            location TEXT,
+            current_company TEXT,
+            designation TEXT,
+            experience_years REAL,
+            notice_period TEXT,
+            expected_salary TEXT,
+            linkedin_url TEXT,
+            portfolio_url TEXT,
+            skills TEXT,
+            education TEXT,
+            photo_path TEXT,
+            resume_path TEXT,
+            resume_original_name TEXT,
+            resume_uploaded_at TIMESTAMP,
+            profile_completed INTEGER NOT NULL DEFAULT 0,
+            updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+        )
+    ''')
+    # Existing candidate accounts predate Version 2. Give each one an empty
+    # profile row so onboarding status and Talent Search work consistently.
+    cursor.execute('''
+        INSERT OR IGNORE INTO candidate_profiles (user_id)
+        SELECT id FROM users WHERE role = 'candidate'
     ''')
 
     # Create licenses table
@@ -265,6 +299,13 @@ def create_tables():
         cursor.execute("ALTER TABLE bookings ADD COLUMN hr_name TEXT")
     if 'hr_number' not in columns:
         cursor.execute("ALTER TABLE bookings ADD COLUMN hr_number TEXT")
+
+    # Candidate photos were introduced after the initial Version 2 release.
+    # Keep existing local and hosted databases compatible without a reset.
+    cursor.execute("PRAGMA table_info(candidate_profiles)")
+    profile_columns = [col['name'] for col in cursor.fetchall()]
+    if 'photo_path' not in profile_columns:
+        cursor.execute("ALTER TABLE candidate_profiles ADD COLUMN photo_path TEXT")
     
     conn.commit()
     conn.close()
@@ -283,11 +324,69 @@ def register_user(name, email, password, role, is_active=1, force_password_chang
         )
         conn.commit()
         user_id = cursor.lastrowid
+        if role == 'candidate':
+            cursor.execute('INSERT OR IGNORE INTO candidate_profiles (user_id) VALUES (?)', (user_id,))
+            conn.commit()
         conn.close()
         return user_id
     except sqlite3.IntegrityError:
         conn.close()
         return None
+
+
+def get_candidate_profile(user_id):
+    """Return a candidate account together with their optional profile data."""
+    conn = get_db_connection()
+    row = conn.execute('''
+        SELECT u.*, p.phone, p.location, p.current_company, p.designation,
+               p.experience_years, p.notice_period, p.expected_salary,
+               p.linkedin_url, p.portfolio_url, p.skills, p.education,
+               p.photo_path,
+               p.resume_path, p.resume_original_name, p.resume_uploaded_at,
+               p.profile_completed
+        FROM users u LEFT JOIN candidate_profiles p ON p.user_id = u.id
+        WHERE u.id = ? AND u.role = 'candidate'
+    ''', (user_id,)).fetchone()
+    conn.close()
+    return dict(row) if row else None
+
+
+def save_candidate_profile(user_id, profile):
+    """Create or update editable candidate onboarding details."""
+    fields = ('phone', 'location', 'current_company', 'designation', 'experience_years',
+              'notice_period', 'expected_salary', 'linkedin_url', 'portfolio_url',
+              'skills', 'education', 'photo_path', 'resume_path', 'resume_original_name')
+    values = [profile.get(field) for field in fields]
+    conn = get_db_connection()
+    conn.execute('''
+        INSERT INTO candidate_profiles
+            (user_id, phone, location, current_company, designation, experience_years,
+             notice_period, expected_salary, linkedin_url, portfolio_url, skills, education,
+             photo_path, resume_path, resume_original_name, resume_uploaded_at, profile_completed, updated_at)
+        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?,
+                CASE WHEN ? IS NOT NULL THEN CURRENT_TIMESTAMP ELSE NULL END, ?, CURRENT_TIMESTAMP)
+        ON CONFLICT(user_id) DO UPDATE SET
+            phone=excluded.phone, location=excluded.location, current_company=excluded.current_company,
+            designation=excluded.designation, experience_years=excluded.experience_years,
+            notice_period=excluded.notice_period, expected_salary=excluded.expected_salary,
+            linkedin_url=excluded.linkedin_url, portfolio_url=excluded.portfolio_url,
+            skills=excluded.skills, education=excluded.education,
+            photo_path=COALESCE(excluded.photo_path, candidate_profiles.photo_path),
+            resume_path=COALESCE(excluded.resume_path, candidate_profiles.resume_path),
+            resume_original_name=COALESCE(excluded.resume_original_name, candidate_profiles.resume_original_name),
+            resume_uploaded_at=CASE WHEN excluded.resume_path IS NOT NULL THEN CURRENT_TIMESTAMP ELSE candidate_profiles.resume_uploaded_at END,
+            profile_completed=excluded.profile_completed, updated_at=CURRENT_TIMESTAMP
+    ''', (user_id, *values, profile.get('resume_path'), int(bool(profile.get('profile_completed')))))
+    conn.commit()
+    conn.close()
+
+
+def clear_candidate_resume(user_id):
+    """Clear resume metadata after the protected file has been removed."""
+    conn = get_db_connection()
+    conn.execute('UPDATE candidate_profiles SET resume_path = NULL, resume_original_name = NULL, resume_uploaded_at = NULL, profile_completed = 0, updated_at = CURRENT_TIMESTAMP WHERE user_id = ?', (user_id,))
+    conn.commit()
+    conn.close()
 
 def login_user(email, password):
     """Authenticate user and return user data if credentials are valid and account is active."""
@@ -1384,21 +1483,22 @@ def create_default_hr_account():
         conn.close()
         return None
     
-    # Use a predictable default password for demo deployments with ephemeral filesystems
-    temp_password = "password123"
+    # Bootstrap password for a new local installation. It is a normal password;
+    # the application no longer forces a replacement on first sign-in.
+    default_password = "password123"
     
     # Create default HR account
-    hashed_password = generate_password_hash(temp_password)
+    hashed_password = generate_password_hash(default_password)
     
     try:
         cursor.execute(
             'INSERT INTO users (name, email, password, role, is_active, force_password_change) VALUES (?, ?, ?, ?, ?, ?)',
-            ('HR Admin', 'hr@blujay.com', hashed_password, 'hr', 1, 1)
+            ('HR Admin', 'hr@blujay.com', hashed_password, 'hr', 1, 0)
         )
         conn.commit()
         user_id = cursor.lastrowid
         conn.close()
-        return {'user_id': user_id, 'email': 'hr@blujay.com', 'temp_password': temp_password}
+        return {'user_id': user_id, 'email': 'hr@blujay.com', 'password': default_password}
     except sqlite3.IntegrityError:
         conn.close()
         return None
@@ -1413,14 +1513,14 @@ def update_user_status(user_id, is_active):
     conn.close()
 
 def reset_user_password(user_id, new_password):
-    """Reset a user's password and force them to change it on next login."""
+    """Reset a user's password without forcing a second sign-in step."""
     conn = get_db_connection()
     cursor = conn.cursor()
     
     hashed_password = generate_password_hash(new_password)
     
     cursor.execute(
-        'UPDATE users SET password = ?, force_password_change = 1 WHERE id = ?',
+        'UPDATE users SET password = ?, force_password_change = 0 WHERE id = ?',
         (hashed_password, user_id)
     )
     conn.commit()
@@ -1445,11 +1545,54 @@ def get_candidates():
     conn = get_db_connection()
     cursor = conn.cursor()
     
-    cursor.execute('SELECT * FROM users WHERE role = ? ORDER BY id', ('candidate',))
+    cursor.execute('''
+        SELECT u.*, p.phone, p.location, p.current_company, p.designation,
+               p.experience_years, p.notice_period, p.skills, p.education, p.resume_path,
+               p.resume_original_name, p.profile_completed
+        FROM users u
+        LEFT JOIN candidate_profiles p ON p.user_id = u.id
+        WHERE u.role = ?
+        ORDER BY u.id
+    ''', ('candidate',))
     candidates = cursor.fetchall()
     conn.close()
     
     return [dict(candidate) for candidate in candidates]
+
+
+def search_candidates(query='', skill='', location='', min_experience='', notice_period='', status='all', has_resume='all'):
+    """Search candidate profiles by skills, with an optional minimum experience in one query."""
+    sql = '''
+        SELECT u.*, p.phone, p.location, p.current_company, p.designation,
+               p.experience_years, p.notice_period, p.skills, p.photo_path, p.resume_path,
+               p.resume_original_name, p.profile_completed
+        FROM users u LEFT JOIN candidate_profiles p ON p.user_id = u.id
+        WHERE u.role = 'candidate'
+    '''
+    params = []
+    # Examples: "DevOps 5+ years", "Python 2 years", or simply "React".
+    # The phrase is split into the skill words and an optional minimum experience.
+    raw_query = (query or skill or '').strip().lower()
+    experience_match = re.search(r'\b(\d+(?:\.\d+)?)\s*\+?\s*(?:years?|yrs?)\b', raw_query)
+    if experience_match:
+        sql += ' AND COALESCE(p.experience_years, 0) >= ?'
+        params.append(float(experience_match.group(1)))
+        raw_query = (raw_query[:experience_match.start()] + raw_query[experience_match.end():]).strip()
+    # A trailing plus is often written without the word "years" (for example, DevOps 5+).
+    else:
+        short_experience_match = re.search(r'\b(\d+(?:\.\d+)?)\s*\+\s*$', raw_query)
+        if short_experience_match:
+            sql += ' AND COALESCE(p.experience_years, 0) >= ?'
+            params.append(float(short_experience_match.group(1)))
+            raw_query = raw_query[:short_experience_match.start()].strip()
+    if raw_query:
+        sql += " AND LOWER(COALESCE(p.skills, '')) LIKE ?"
+        params.append(f'%{raw_query}%')
+    sql += ' ORDER BY u.name COLLATE NOCASE'
+    conn = get_db_connection()
+    rows = conn.execute(sql, params).fetchall()
+    conn.close()
+    return [dict(row) for row in rows]
 
 def update_candidate(user_id, name, email):
     """Update candidate name and email."""
@@ -1482,7 +1625,7 @@ def delete_candidate_account(user_id):
             if not candidate:
                 return False
             slots = conn.execute("SELECT DISTINCT slot_id FROM bookings WHERE user_id = ? AND booking_status = 'confirmed'", (user_id,)).fetchall()
-            for table in ('notifications', 'previous_interview_history', 'user_preferences', 'bookings'):
+            for table in ('notifications', 'previous_interview_history', 'user_preferences', 'bookings', 'candidate_profiles'):
                 conn.execute(f'DELETE FROM {table} WHERE user_id = ?', (user_id,))
             for slot in slots:
                 conn.execute("UPDATE interview_slots SET status = 'available' WHERE id = ? AND status = 'booked' AND NOT EXISTS (SELECT 1 FROM bookings WHERE slot_id = ? AND booking_status = 'confirmed')", (slot['slot_id'], slot['slot_id']))

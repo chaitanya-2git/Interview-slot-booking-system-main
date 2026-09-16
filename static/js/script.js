@@ -208,6 +208,21 @@ document.addEventListener("DOMContentLoaded", function () {
 
     }
 
+    // Slot rows are re-rendered after a date selection. Expose the action for
+    // generated buttons and explicitly open the existing Bootstrap modal.
+    window.openBookingModal = function (button) {
+        if (window.bootstrap && bookingModal) {
+            window.bootstrap.Modal.getOrCreateInstance(bookingModal).show(button);
+        }
+    };
+
+    document.addEventListener("click", function (event) {
+        const button = event.target.closest(".book-slot-btn");
+        if (button) {
+            window.openBookingModal(button);
+        }
+    });
+
 
     /* ---------------- RESCHEDULE MODAL ---------------- */
 
@@ -449,11 +464,10 @@ document.addEventListener("DOMContentLoaded", function () {
             let actionButton = block.available > 0
                 ? `<button
                         class="btn btn-primary btn-sm book-slot-btn"
-                        data-bs-toggle="modal"
-                        data-bs-target="#bookingModal"
                         data-slot-date="${block.interview_date}"
                         data-slot-start="${block.start_time}"
-                        data-slot-end="${block.end_time}">
+                        data-slot-end="${block.end_time}"
+                        onclick="openBookingModal(this)">
                         Book
                     </button>`
                 : `<button class="btn btn-secondary btn-sm" disabled>Book</button>`;

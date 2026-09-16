@@ -12,11 +12,10 @@
                 <strong>{{ admin.name }}</strong>{% if admin.id == session.user_id %} <span class="settings-role">You</span>{% endif %}
                 <p style="margin:6px 0;color:#647792;">{{ admin.email }}</p>
                 <span class="settings-role">{{ 'Active' if admin.is_active else 'Inactive' }}</span>
-                {% if admin.force_password_change %}<span class="settings-role">Password setup required</span>{% endif %}
             </div>
             {% endfor %}
         </section>
-        <section class="settings-card"><header><span class="settings-icon"><i class="bi bi-person-plus"></i></span><div><h2>Add admin</h2><p>The new admin must change their temporary password on first login.</p></div></header>
+        <section class="settings-card"><header><span class="settings-icon"><i class="bi bi-person-plus"></i></span><div><h2>Add admin</h2><p>Set the password the new admin will use to sign in.</p></div></header>
             <form method="POST"><input type="hidden" name="csrf_token" value="{{ session.admin_csrf }}">
                 <div class="settings-fields"><div class="form-group"><label for="adminName">Full name</label><input class="form-control" id="adminName" name="name" required maxlength="100" value="{{ request.form.get('name', '') }}"></div><div class="form-group"><label for="adminEmail">Login email</label><input class="form-control" type="email" id="adminEmail" name="email" required maxlength="254" value="{{ request.form.get('email', '') }}"></div></div>
                 <div class="settings-fields"><div class="form-group"><label for="adminPassword">Temporary password</label><input class="form-control" type="password" id="adminPassword" name="password" autocomplete="new-password" required minlength="8"></div><div class="form-group"><label for="adminConfirm">Confirm password</label><input class="form-control" type="password" id="adminConfirm" name="confirm_password" autocomplete="new-password" required minlength="8"></div></div>

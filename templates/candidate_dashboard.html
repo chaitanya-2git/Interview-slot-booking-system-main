@@ -11,7 +11,7 @@
     </a>
 
     <div class="sidebar-user">
-        <div class="sidebar-avatar">{{ user_name[0] if user_name else 'C' }}</div>
+        {% if profile and profile.photo_path %}<img class="sidebar-avatar sidebar-avatar-photo" src="{{ url_for('main.candidate_photo', user_id=profile.id) }}" alt="{{ user_name }} profile photo">{% else %}<div class="sidebar-avatar">{{ user_name[0] if user_name else 'C' }}</div>{% endif %}
         <div class="sidebar-user-info">
             <div class="sidebar-user-name">{{ user_name }}</div>
             <div class="sidebar-user-role">Candidate</div>
@@ -40,6 +40,9 @@
 
         <div class="sidebar-divider"></div>
 
+        <a href="{{ url_for('main.candidate_profile') }}" class="sidebar-link">
+            <i class="bi bi-person-vcard"></i> My Profile
+        </a>
         <a href="{{ url_for('main.settings') }}" class="sidebar-link">
             <i class="bi bi-gear"></i> Settings
         </a>
@@ -86,6 +89,12 @@
                     <i class="bi bi-plus-lg"></i> Book Interview
                 </button>
             </div>
+            {% if not profile or not profile.profile_completed %}
+            <div class="alert alert-info" role="status" style="display:flex;align-items:center;justify-content:space-between;gap:16px;flex-wrap:wrap;">
+                <span><strong>Complete your candidate profile.</strong> Add your skills and resume so recruiters can find you in Talent Search.</span>
+                <a class="btn btn-primary btn-sm" href="{{ url_for('main.candidate_profile') }}">Complete Profile</a>
+            </div>
+            {% endif %}
             <!-- Next interview highlight -->
             {% if user_bookings %}
             {% set next = user_bookings[0] %}
@@ -99,17 +108,17 @@
                 <div class="ni-role">{{ next.technology or 'Technical' }} — {{ next.interview_round or 'Technical' }} Round</div>
                 <div class="ni-company">{{ next.company_name or 'BluJay Technologies' }}</div>
                 <div class="ni-actions">
-                    <button class="ni-btn ni-btn-primary candidate-nav-link" data-section="my-bookings">
-                        <i class="bi bi-eye"></i> View Details
+                    <button type="button" class="ni-btn ni-btn-primary candidate-nav-link" data-section="my-bookings">
+                        <i class="bi bi-list-check"></i> View schedule
                     </button>
-                    <button class="ni-btn ni-btn-secondary change-slot-btn" data-bs-toggle="modal"
+                    <button type="button" class="ni-btn ni-btn-secondary change-slot-btn" data-bs-toggle="modal"
                         data-bs-target="#changeSlotModal" data-booking-id="{{ next.id }}"
                         data-current-slot="{{ next.start_time }} - {{ next.end_time }}"
                         data-current-license="{{ next.license_name }}" data-interview-date="{{ next.interview_date }}">
                         <i class="bi bi-calendar-event"></i> Change Slot
                     </button>
                     <form action="{{ url_for('main.candidate_cancel_booking_route', booking_id=next.id) }}"
-                        method="POST" onsubmit="return confirm('Cancel this booking?')" style="display:inline;">
+                        method="POST" onsubmit="return confirm('Cancel this booking?')" class="ni-cancel-form">
                         <button type="submit" class="ni-btn ni-btn-danger">
                             <i class="bi bi-x-circle"></i> Cancel
                         </button>

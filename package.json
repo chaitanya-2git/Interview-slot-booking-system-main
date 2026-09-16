@@ -1,0 +1,26 @@
+{
+  "name": "interview-slot-booking-system-main",
+  "version": "1.0.0",
+  "description": "A role-based web application for managing interview availability, candidate bookings, interview outcomes, and scheduling communication at BluJay Technologies.",
+  "scripts": {
+    "test:e2e": "playwright test",
+    "test:e2e:ui": "playwright test --ui",
+    "test:e2e:headed": "playwright test --headed"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/chaitanya-2git/Interview-slot-booking-system-main.git"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "UNLICENSED",
+  "type": "commonjs",
+  "bugs": {
+    "url": "https://github.com/chaitanya-2git/Interview-slot-booking-system-main/issues"
+  },
+  "homepage": "https://github.com/chaitanya-2git/Interview-slot-booking-system-main#readme",
+  "devDependencies": {
+    "@playwright/test": "^1.63.0",
+    "bootstrap": "^5.3.0"
+  }
+}

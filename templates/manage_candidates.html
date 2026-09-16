@@ -1,6 +1,8 @@
-﻿{% extends "base.html" %}
-{% block content %}
+{% extends "base.html" %}
+{% block extra_head %}
 <link rel="stylesheet" href="{{ url_for('static', filename='css/candidates.css', v='2') }}">
+{% endblock %}
+{% block content %}
 <main class="candidate-manager">
     <nav class="cm-nav" aria-label="Page navigation">
         <a href="{{ url_for('main.hr_dashboard') }}"><img src="{{ url_for('static', filename='images/blujay-logo.png') }}" alt="BluJay Technologies"></a>
@@ -8,32 +10,38 @@
     </nav>
     <header class="cm-heading">
         <div><p class="cm-eyebrow">PEOPLE MANAGEMENT</p><h1>Manage Candidates</h1><p>Keep your candidate accounts organized and ready for interviews.</p></div>
-        <a href="{{ url_for('main.create_candidate') }}" class="btn btn-primary"><i class="bi bi-person-plus" aria-hidden="true"></i> Add Candidate</a>
+        <div style="display:flex;gap:10px;flex-wrap:wrap;"><a href="{{ url_for('main.talent_search') }}" class="btn btn-secondary"><i class="bi bi-search" aria-hidden="true"></i> Talent Search</a><a href="{{ url_for('main.create_candidate') }}" class="btn btn-primary"><i class="bi bi-person-plus" aria-hidden="true"></i> Add Candidate</a></div>
     </header>
     {% set active_count = candidates|selectattr('is_active', 'equalto', 1)|list|length %}
+    {% set completed_profiles = candidates|selectattr('profile_completed', 'equalto', 1)|list|length %}
     <section class="cm-stats" aria-label="Candidate overview">
         <div><span class="cm-stat-icon"><i class="bi bi-people" aria-hidden="true"></i></span><div><strong>{{ candidates|length }}</strong><span>Total candidates</span></div></div>
         <div><span class="cm-stat-icon cm-green"><i class="bi bi-person-check" aria-hidden="true"></i></span><div><strong>{{ active_count }}</strong><span>Active accounts</span></div></div>
         <div><span class="cm-stat-icon cm-amber"><i class="bi bi-person-dash" aria-hidden="true"></i></span><div><strong>{{ candidates|length - active_count }}</strong><span>Inactive accounts</span></div></div>
+        <div><span class="cm-stat-icon"><i class="bi bi-person-check" aria-hidden="true"></i></span><div><strong>{{ completed_profiles }}</strong><span>Profiles completed</span></div></div>
     </section>
     <section class="cm-directory" aria-label="Candidate directory">
         <div class="cm-tools">
             <div><h2>Candidate directory</h2><p id="candidateResults" role="status" aria-live="polite">{{ candidates|length }} candidates</p></div>
             <div class="cm-filters">
-                <div class="cm-search"><i class="bi bi-search" aria-hidden="true"></i><input type="search" id="candidateSearch" aria-label="Search candidates by name or email" placeholder="Search name or email..."></div>
+                <div class="cm-search"><i class="bi bi-search" aria-hidden="true"></i><input type="search" id="candidateSearch" aria-label="Search candidates by name, email, or skills" placeholder="Search candidate, email, or skill..."></div>
                 <select id="candidateStatus" aria-label="Filter by account status"><option value="all">All statuses</option><option value="active">Active</option><option value="inactive">Inactive</option></select>
             </div>
         </div>
         <div class="cm-grid">
             {% for candidate in candidates %}
-            <article class="cm-card" data-name="{{ candidate.name|lower }}" data-email="{{ candidate.email|lower }}" data-status="{{ 'active' if candidate.is_active == 1 else 'inactive' }}">
+            <article class="cm-card" data-name="{{ candidate.name|lower }}" data-email="{{ candidate.email|lower }}" data-skills="{{ candidate.skills|default('', true)|lower }}" data-status="{{ 'active' if candidate.is_active == 1 else 'inactive' }}">
                 <div class="cm-card-top"><span class="cm-avatar">{{ candidate.name[0]|upper if candidate.name else '?' }}</span><span class="cm-status {{ 'is-active' if candidate.is_active == 1 else 'is-inactive' }}"><span aria-hidden="true"></span>{{ 'Active' if candidate.is_active == 1 else 'Inactive' }}</span></div>
                 <h3>{{ candidate.name }}</h3>
                 <p class="cm-id">Candidate #{{ candidate.id }}</p>
+                <p class="cm-id"><i class="bi bi-{{ 'check-circle-fill' if candidate.profile_completed else 'clock' }}" aria-hidden="true"></i> {{ 'Profile complete' if candidate.profile_completed else 'Onboarding pending' }}</p>
                 <p class="cm-email"><i class="bi bi-envelope" aria-hidden="true"></i><span>{{ candidate.email }}</span></p>
+                {% if candidate.skills %}<p class="cm-email"><i class="bi bi-stars" aria-hidden="true"></i><span>{{ candidate.skills }}</span></p>{% endif %}
                 <div class="cm-actions">
+                    <a href="{{ url_for('main.candidate_details', user_id=candidate.id) }}"><i class="bi bi-person-vcard" aria-hidden="true"></i> View details</a>
                     <a href="{{ url_for('main.edit_candidate', user_id=candidate.id) }}"><i class="bi bi-pencil" aria-hidden="true"></i> Edit profile</a>
                     <a href="{{ url_for('main.candidate_history', user_id=candidate.id) }}"><i class="bi bi-clock-history" aria-hidden="true"></i> View history</a>
+                    {% if candidate.resume_path %}<a href="{{ url_for('main.candidate_resume', user_id=candidate.id) }}"><i class="bi bi-download" aria-hidden="true"></i> Download resume</a>{% endif %}
                     <a href="{{ url_for('main.reset_candidate_password', user_id=candidate.id) }}"><i class="bi bi-key" aria-hidden="true"></i> Reset password</a>
                     <form action="{{ url_for('main.toggle_candidate_status', user_id=candidate.id) }}" method="POST"><button type="submit" class="{{ 'cm-deactivate' if candidate.is_active == 1 else 'cm-activate' }}"><i class="bi bi-{{ 'pause' if candidate.is_active == 1 else 'play' }}-circle" aria-hidden="true"></i> {{ 'Deactivate' if candidate.is_active == 1 else 'Activate' }}</button></form>
                 </div>
@@ -59,7 +67,7 @@
         const query = search.value.trim().toLowerCase();
         let visible = 0;
         cards.forEach(card => {
-            const matches = (card.dataset.name.includes(query) || card.dataset.email.includes(query)) && (status.value === 'all' || card.dataset.status === status.value);
+            const matches = (card.dataset.name.includes(query) || card.dataset.email.includes(query) || card.dataset.skills.includes(query)) && (status.value === 'all' || card.dataset.status === status.value);
             card.hidden = !matches;
             if (matches) visible++;
         });

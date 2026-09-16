@@ -1,371 +1,260 @@
-# ?? BluJay Technologies — Interview Slot Booking System
+ï»¿# BluJay Interview Portal
 
-> **A full-featured web application for streamlining interview scheduling between HR teams and candidates.**
+A role-based interview scheduling and candidate-management portal for BluJay Technologies. Candidates can maintain professional profiles, upload resumes, book interview slots, and track their interviews. HR and administrators manage candidates, schedules, interview results, and talent discovery from one workspace.
 
-Built with **Python Flask**, **SQLite**, **Bootstrap 5**, and vanilla **JavaScript** — this system provides a dual-role interface for HR staff and candidates to efficiently manage interview appointments.
+## Contents
 
----
+- [What the application does](#what-the-application-does)
+- [Roles and permissions](#roles-and-permissions)
+- [Key features](#key-features)
+- [Technology stack](#technology-stack)
+- [Architecture](#architecture)
+- [Project structure](#project-structure)
+- [Run locally](#run-locally)
+- [Configuration](#configuration)
+- [Testing](#testing)
+- [Production deployment](#production-deployment)
+- [Data and uploads](#data-and-uploads)
+- [Security notes](#security-notes)
 
-## ?? Features
+## What the application does
 
-### ?? HR Panel
-| Feature | Description |
-|---|---|
-| **Dashboard** | Overview stats — total bookings, available slots, today's interviews, total candidates |
-| **Manage Bookings** | View, edit, cancel, and reschedule all candidate bookings |
-| **Today's Interviews** | Dedicated view for interviews scheduled for the current day |
-| **Create Interview Slots** | Create time slots per license type (Earth / Moon) |
-| **Edit / Delete Slots** | Modify or remove existing interview time slots |
-| **Manage Candidates** | Create, edit, activate/deactivate candidate accounts |
-| **Create Candidate Slot** | Book an extra interview slot for a specific candidate (overrides booking limits) |
-| **Complete Interview** | Mark an interview as done, record feedback and result |
-| **Assign Support Person** | Assign a support personnel name to any booking |
-| **Candidate History** | View full interview history for any candidate |
-| **Reschedule Interviews** | Reassign a candidate to a different available slot |
-| **Notifications** | Real-time notification system for all booking events |
-| **Reports** | Analytics and statistics view |
-| **Reset Candidate Password** | Generate a new temporary password for a candidate |
+The portal centralizes the interview process from candidate onboarding through booking, rescheduling, completion, and feedback.
 
-### ?? Candidate Panel
-| Feature | Description |
-|---|---|
-| **Dashboard** | Overview of personal stats — total, upcoming, completed, cancelled bookings |
-| **Book Interview Slot** | Pick a date ? select license type (Earth/Moon) ? choose a time slot ? fill booking details |
-| **My Bookings** | View all upcoming and past bookings with status |
-| **Change Slot** | Reschedule an existing booking to a different available slot |
-| **Cancel Booking** | Cancel a confirmed interview booking |
-| **Previous Interview History** | Log and view externally attended interviews (pre-registration) |
-| **Notifications** | Receive real-time alerts for booking confirmations, reschedules, and results |
-| **Change Password** | Update account password (forced on first login) |
+Candidates can choose an available interview time, enter booking information, change or cancel a booking, receive in-app notifications, and view their interview history. They can also create a professional profile with skills, experience, education, notice period, LinkedIn URL, resume, and profile photo.
 
----
+HR and administrators can create slots, manage bookings, review candidate profiles and resumes, search talent by skill and experience, and record interview outcomes.
 
-## ??? Project Structure
+## Roles and permissions
 
-```
-Interview-slot-booking-system-main/
-¦
-+-- app.py                    # Flask app entry point — initializes DB, registers routes
-+-- routes.py                 # All route/view definitions (Blueprint)
-+-- database.py               # SQLite database layer — all CRUD operations
-+-- requirements.txt          # Python dependencies
-¦
-+-- templates/                # Jinja2 HTML templates
-¦   +-- base.html             # Base layout with sidebar and navigation
-¦   +-- index.html            # Login / landing page
-¦   +-- login.html            # Alternate login page
-¦   +-- hr_dashboard.html     # Full HR dashboard
-¦   +-- candidate_dashboard.html  # Full candidate dashboard
-¦   +-- candidate_history.html    # HR view of a candidate's interview history
-¦   +-- create_slot.html          # Form to create a new interview slot
-¦   +-- edit_slot.html            # Form to edit an existing slot
-¦   +-- create_candidate.html     # Form for HR to add a new candidate
-¦   +-- edit_candidate.html       # Form to edit candidate details
-¦   +-- manage_candidates.html    # List of all candidates with actions
-¦   +-- create_candidate_slot.html # Book extra slot for a candidate (HR)
-¦   +-- edit_booking.html         # Edit booking details
-¦   +-- complete_interview.html   # Mark interview as complete + record feedback
-¦   +-- reschedule_interview.html       # Full reschedule page
-¦   +-- reschedule_interview_partial.html # Modal partial for AJAX reschedule
-¦   +-- change_slot_partial.html  # Modal partial for candidate slot change
-¦   +-- change_password.html      # Password change page
-¦   +-- reset_candidate_password.html   # HR resets a candidate password
-¦
-+-- static/
-¦   +-- css/
-¦   ¦   +-- style.css         # Global stylesheet
-¦   +-- js/
-¦   ¦   +-- script.js         # Frontend interactivity (AJAX, modals, UI)
-¦   +-- images/
-¦       +-- blujay_logo.jpg   # Company branding logo
-¦
-+-- check_db.py               # Utility: inspect database state
-+-- check_slots.py            # Utility: check available slots
-+-- delete_booking.py         # Utility: manually delete a booking
-+-- get_users.py              # Utility: list all users
-+-- reduce_slots.py           # Utility: reduce slot count
-+-- reset_database.py         # Utility: wipe and reinitialize database
-+-- test_dashboard.py         # Dashboard testing script
-+-- verify_html.py            # HTML template verification script
-```
+| Role | Access |
+| --- | --- |
+| Candidate | Own dashboard, profile, resume/photo upload, available slots, bookings, rescheduling, cancellation, notifications, history, and settings. |
+| HR | Candidate management, Talent Search, slots, bookings, todayâ€™s schedule, support assignments, feedback, and interview results. |
+| Admin | All HR permissions plus administrator-account management. |
 
----
+## Key features
 
-## ??? Database Schema
+### Candidate experience
 
-The application uses **SQLite** (`interview_booking.db`) with the following tables:
+- Secure sign-in with password hashing and forced password changes for new accounts.
+- Responsive dashboard for desktop and mobile.
+- Available slots are filtered so time slots that have already started today are not bookable.
+- Book an interview with company, technology, interview round, remarks, and HR contact details.
+- Change an existing slot or cancel a confirmed booking.
+- View upcoming, completed, cancelled, and previous interviews.
+- Receive in-app booking, reschedule, cancellation, and result notifications.
+- Professional profile onboarding wizard.
+- Resume upload for PDF, DOC, and DOCX files.
+- Resume parsing for PDF and DOCX files, with extracted phone, experience, skills, and education available for review before saving.
+- Profile photo upload using JPG, JPEG, PNG, or WEBP formats, up to 2 MB.
+- Private resume download and private profile-photo delivery for authorized users.
 
-```
-+--------------------------------------------------+
-¦ users                                            ¦
-+--------------------------------------------------¦
-¦ id, name, email, password (hashed), role,        ¦
-¦ is_active, force_password_change                 ¦
-+--------------------------------------------------+
+### HR and administrator operations
 
-+--------------------------------------------------+
-¦ licenses                                         ¦
-+--------------------------------------------------¦
-¦ id, name (Earth / Moon), description             ¦
-+--------------------------------------------------+
+- Dashboard metrics for bookings, candidates, available slots, and interviews.
+- Todayâ€™s interviews shown in chronological time order.
+- Create, edit, and delete interview slots.
+- Manage booking details, reschedules, cancellations, support-person assignments, feedback, and interview results.
+- Create candidates, update accounts, activate/deactivate access, reset passwords, and delete candidates.
+- Review complete candidate profiles, booking history, skills, education, and uploaded resumes.
+- Download candidate resumes from management, Talent Search, and candidate-details pages.
+- Single-field Talent Search for skill and minimum experience.
+  - `Python` finds candidates with Python in their saved skills.
+  - `DevOps 5+ years` finds candidates with DevOps and at least five years of experience.
+  - `React 2 years` finds candidates with React and at least two years of experience.
+- Add and manage additional administrator accounts.
 
-+--------------------------------------------------+
-¦ interview_slots                                  ¦
-+--------------------------------------------------¦
-¦ id, license_id (FK), interview_date,             ¦
-¦ start_time, end_time, status (available/booked)  ¦
-+--------------------------------------------------+
+## Technology stack
 
-+--------------------------------------------------+
-¦ bookings                                         ¦
-+--------------------------------------------------¦
-¦ id, user_id (FK), slot_id (FK),                  ¦
-¦ booking_status, company_name, technology,        ¦
-¦ interview_round, remarks, interview_feedback,    ¦
-¦ interview_result, interview_completed,           ¦
-¦ support_person                                   ¦
-+--------------------------------------------------+
+| Area | Technology |
+| --- | --- |
+| Backend | Python 3, Flask 3 |
+| Production WSGI server | Gunicorn |
+| Database | SQLite through Python `sqlite3` |
+| Authentication | Flask sessions and Werkzeug password hashing |
+| Templates | Jinja2 |
+| Frontend | HTML5, CSS3, JavaScript, Bootstrap Icons |
+| Resume parsing | `pypdf`, `python-docx` |
+| Browser testing | Playwright |
+| Deployment target | Oracle Cloud Ubuntu VM, Nginx, Gunicorn, Cloudflare DNS |
 
-+--------------------------------------------------+
-¦ notifications                                    ¦
-+--------------------------------------------------¦
-¦ id, user_id (FK), notification_type, message,    ¦
-¦ is_read, created_at                              ¦
-+--------------------------------------------------+
+## Architecture
 
-+--------------------------------------------------+
-¦ previous_interview_history                       ¦
-+--------------------------------------------------¦
-¦ id, user_id (FK), company_name, interview_round, ¦
-¦ interview_date, result, remarks, created_at      ¦
-+--------------------------------------------------+
+```text
+Browser
+  |
+  v
+Nginx + HTTPS (production)
+  |
+  v
+Gunicorn
+  |
+  v
+Flask application
+  |-- routes.py             Request handling and role checks
+  |-- templates/            Jinja pages
+  |-- static/               CSS, JavaScript, branding assets
+  |-- database.py           SQLite schema, migrations, and queries
+  |-- uploads/resumes/      Private resume files
+  `-- uploads/photos/       Private candidate photos
 ```
 
----
+## Project structure
 
-## ?? Tech Stack
+```text
+.
+â”œâ”€â”€ app.py                  Flask application entry point
+â”œâ”€â”€ routes.py               Application routes and business workflows
+â”œâ”€â”€ database.py             SQLite schema, migrations, and database helpers
+â”œâ”€â”€ resume_parser.py        PDF and DOCX resume extraction
+â”œâ”€â”€ requirements.txt        Python dependencies
+â”œâ”€â”€ templates/              Jinja HTML pages
+â”œâ”€â”€ static/
+â”‚   â”œâ”€â”€ css/                Application, login, profile, and details styles
+â”‚   â”œâ”€â”€ js/                 Client-side interactions
+â”‚   â””â”€â”€ images/             BluJay assets
+â”œâ”€â”€ uploads/
+â”‚   â”œâ”€â”€ resumes/            Private uploaded resumes, ignored by Git
+â”‚   â””â”€â”€ photos/             Private uploaded profile photos, ignored by Git
+â”œâ”€â”€ e2e/
+â”‚   â”œâ”€â”€ tests/              Playwright end-to-end tests
+â”‚   â””â”€â”€ server.py           Disposable test server and test database setup
+â”œâ”€â”€ playwright.config.js    Playwright configuration
+â””â”€â”€ package.json            E2E test commands
+```
 
-| Layer | Technology |
-|---|---|
-| **Backend** | Python 3, Flask 3.0.0 |
-| **Database** | SQLite (via `sqlite3`) |
-| **Auth** | Werkzeug password hashing |
-| **Frontend** | HTML5, Bootstrap 5.3, Bootstrap Icons |
-| **Styling** | Vanilla CSS (`static/css/style.css`) |
-| **JavaScript** | Vanilla JS with AJAX for dynamic slot loading |
-| **Templating** | Jinja2 (Flask built-in) |
-
----
-
-## ?? Installation & Setup
+## Run locally
 
 ### Prerequisites
-- Python 3.8 or higher
-- pip
 
-### 1. Clone the repository
+- Python 3.11 or newer
+- Node.js 18 or newer for Playwright tests
+- Git
+
+### Setup
 
 ```bash
-git clone https://github.com/your-username/Interview-slot-booking-system.git
+git clone https://github.com/chaitanya-2git/Interview-slot-booking-system-main.git
 cd Interview-slot-booking-system-main
-```
 
-### 2. Create a virtual environment (recommended)
-
-```bash
 # Windows
-python -m venv venv
+py -m venv venv
 venv\Scripts\activate
 
 # macOS / Linux
 python3 -m venv venv
 source venv/bin/activate
-```
 
-### 3. Install dependencies
-
-```bash
 pip install -r requirements.txt
-```
-
-### 4. Run the application
-
-```bash
 python app.py
 ```
 
-The app will start at **http://127.0.0.1:5000**
+Open http://127.0.0.1:5000 in a browser.
 
----
+The application creates the SQLite database and required tables automatically on first run.
 
-## ?? Default Credentials
+## Configuration
 
-On **first startup**, the application automatically:
-1. Creates all database tables
-2. Initializes two default licenses: **Earth** and **Moon**
-3. Creates a **default HR account** and prints credentials to the console
+Set the following environment variables for production:
 
-```
-============================================================
-DEFAULT HR ACCOUNT CREATED
-============================================================
-Email: <auto-generated>
-Temporary Password: <auto-generated>
-Please change this password after first login.
-============================================================
-```
+| Variable | Required | Purpose |
+| --- | --- | --- |
+| `SECRET_KEY` | Yes | Securely signs session cookies. Use a long random value. |
+| `PORT` | No | Port used by Flask locally. Defaults to `5000`. |
 
-> ?? **Important:** Change the default HR password immediately after the first login.
+PowerShell example:
 
----
-
-## ?? User Roles
-
-### `hr` — Human Resources
-- Full administrative access
-- Can create, edit, delete slots and candidates
-- Can view and manage all bookings
-- Can complete interviews and record results
-
-### `candidate` — Interview Candidate
-- Accounts created **only by HR** (public registration is disabled)
-- Can book available interview slots
-- Can reschedule or cancel own bookings
-- Can log previous interview history
-- Forced to change password on first login
-
----
-
-## ?? API Endpoints (Routes Reference)
-
-| Method | Route | Role | Description |
-|---|---|---|---|
-| `GET/POST` | `/` | All | Login page |
-| `GET/POST` | `/login` | All | Alternate login |
-| `GET` | `/logout` | All | Logout and clear session |
-| `GET/POST` | `/change-password` | All | Change own password |
-| `GET` | `/hr-dashboard` | HR | HR main dashboard |
-| `GET` | `/todays-interviews` | HR | Today's scheduled interviews |
-| `GET` | `/candidate-dashboard` | Candidate | Candidate main dashboard |
-| `GET` | `/available-slots-by-date` | Candidate | AJAX: fetch slots for a date |
-| `POST` | `/book-slot/<slot_id>` | Candidate | Book an interview slot |
-| `GET/POST` | `/create-slot` | HR | Create a new interview slot |
-| `GET/POST` | `/edit-slot/<slot_id>` | HR | Edit an existing slot |
-| `POST` | `/delete-slot/<slot_id>` | HR | Delete a slot |
-| `GET/POST` | `/reschedule/<booking_id>` | HR | Reschedule (AJAX + full page) |
-| `GET/POST` | `/candidate-change-slot/<booking_id>` | Candidate | Change own booking slot |
-| `GET/POST` | `/edit-booking/<booking_id>` | HR | Edit booking details |
-| `POST` | `/cancel-booking/<booking_id>` | HR | Cancel a booking (HR) |
-| `POST` | `/candidate-cancel-booking/<booking_id>` | Candidate | Cancel own booking |
-| `GET/POST` | `/complete-interview/<booking_id>` | HR | Mark interview complete + record result |
-| `POST` | `/assign-support/<booking_id>` | HR | Assign support person to booking |
-| `GET` | `/candidate-history/<user_id>` | HR | View a candidate full history |
-| `GET` | `/manage-candidates` | HR | List all candidates |
-| `GET/POST` | `/create-candidate` | HR | Create new candidate account |
-| `GET/POST` | `/edit-candidate/<user_id>` | HR | Edit candidate profile |
-| `POST` | `/toggle-candidate-status/<user_id>` | HR | Activate/deactivate candidate |
-| `POST` | `/reset-candidate-password/<user_id>` | HR | Reset candidate password |
-| `GET/POST` | `/create-candidate-slot/<user_id>` | HR | Book extra slot for candidate |
-| `POST` | `/add-previous-history` | Candidate | Log previous interview record |
-| `POST` | `/get-slots-by-date` | HR | AJAX: generate/fetch slots for date |
-| `POST` | `/mark-notification-read/<id>` | All | Mark notification as read |
-
----
-
-## ?? Notification System
-
-The system sends in-app notifications for key events:
-
-| Event | Notified Parties |
-|---|---|
-| Slot booked by candidate | Candidate + All HR |
-| Booking cancelled (by HR) | Candidate |
-| Booking cancelled (by candidate) | All HR |
-| Slot changed by candidate | All HR |
-| Interview rescheduled (by HR) | Candidate |
-| Interview completed | Candidate |
-| Result available | Candidate |
-| Max bookings limit reached | All HR |
-
----
-
-## ?? Utility Scripts
-
-| Script | Purpose |
-|---|---|
-| `check_db.py` | Inspect the current state of the database |
-| `check_slots.py` | Check available interview slots |
-| `delete_booking.py` | Manually delete a specific booking |
-| `get_users.py` | List all registered users |
-| `reduce_slots.py` | Reduce number of available slots |
-| `reset_database.py` | ?? Wipe and reinitialize the entire database |
-| `verify_html.py` | Verify that all HTML templates are valid |
-| `test_dashboard.py` | Test dashboard functionality |
-
----
-
-## ?? Security Features
-
-- Passwords stored using **Werkzeug PBKDF2-SHA256** hashing — never plain text
-- Session-based authentication with Flask sessions
-- **Role-based access control (RBAC)** on every route
-- Candidates can only access/modify their **own** bookings
-- **Force password change** on first login for newly created accounts
-- Public registration is **disabled** — only HR can create candidate accounts
-- Inactive accounts are blocked from logging in
-
----
-
-## ??? Configuration
-
-Open `app.py` to configure the secret key:
-
-```python
-app.secret_key = "your-secret-key-here"  # Change this in production!
+```powershell
+$env:SECRET_KEY = "replace-with-a-long-random-secret"
+python app.py
 ```
 
-> ?? **Production Note:** Use a strong, randomly generated secret key stored as an environment variable.
+Never use the development fallback secret in production.
 
-```python
-import os
-app.secret_key = os.environ.get("SECRET_KEY", "fallback-dev-key")
+## Testing
+
+The project uses Playwright for end-to-end browser tests. Playwright starts a disposable Flask server and a temporary SQLite database, so tests do not alter your local `interview_booking.db`.
+
+Install JavaScript dependencies:
+
+```bash
+npm install
 ```
 
----
+Run tests:
 
-## ?? Responsive Design
+```bash
+npm run test:e2e
+npm run test:e2e:ui
+npm run test:e2e:headed
+```
 
-The UI is built with **Bootstrap 5.3** and is fully responsive across:
-- ??? Desktop (1200px+)
-- ?? Laptop (992px+)
-- ?? Mobile (< 768px)
+Current E2E coverage includes:
 
----
+- HR and candidate authentication.
+- Candidate onboarding with resume parsing.
+- Candidate profile photo upload and display.
+- Slot loading, interview booking, and cancellation.
+- HR Talent Search by skill and minimum experience.
 
-## ?? Contributing
+HTML reports are written to `playwright-report/`. Screenshots and traces are retained for failed tests in `test-results/`.
 
-1. Fork the repository
-2. Create your feature branch: `git checkout -b feature/AmazingFeature`
-3. Commit your changes: `git commit -m 'Add some AmazingFeature'`
-4. Push to the branch: `git push origin feature/AmazingFeature`
-5. Open a Pull Request
+## Production deployment
 
----
+### Recommended always-on deployment
 
-## ?? License
+For an always-on deployment without Renderâ€™s free-service sleep behavior, use this architecture:
 
-This project is proprietary to **BluJay Technologies**. All rights reserved.
+```text
+interviews.blujaytech.com
+        |
+Cloudflare DNS
+        |
+Oracle Cloud Ubuntu VM
+  â”œâ”€â”€ Nginx
+  â”œâ”€â”€ Gunicorn
+  â”œâ”€â”€ Flask
+  â”œâ”€â”€ SQLite initially
+  â””â”€â”€ PostgreSQL later for higher usage
+```
 
----
+Hostinger Web Hosting cannot run this application because it is a Python/Flask server application. It can continue to host `www.blujaytech.com`, while `interviews.blujaytech.com` points through Cloudflare to the Oracle VM.
 
-## ?? Authors
+Production setup checklist:
 
-**BluJay Technologies Development Team**
+1. Create an Ubuntu VM in Oracle Cloud.
+2. Open inbound ports 80 and 443. Restrict SSH port 22 to trusted access where possible.
+3. Clone this repository to the VM.
+4. Create a Python virtual environment and install `requirements.txt`.
+5. Run the application with Gunicorn, for example: `gunicorn --workers 1 --bind 127.0.0.1:8000 app:app`.
+6. Configure Nginx to proxy `interviews.blujaytech.com` to Gunicorn.
+7. Issue an SSL certificate and configure Cloudflare SSL mode to **Full (strict)**.
+8. Create a `systemd` service so Gunicorn starts automatically after a server restart.
+9. Set `SECRET_KEY` as a protected environment variable.
+10. Back up the database and upload directories daily.
 
-> *Innovating the Future of Technology*
+### Database recommendation
 
----
+SQLite is suitable for local development and a small initial deployment. When multiple HR users and candidates use the application concurrently, migrate to PostgreSQL for stronger concurrency, reliability, managed backups, and safer schema changes.
 
-<p align="center">
-  <strong>BluJay Technologies © 2024 — Interview Slot Booking System</strong>
-</p>
+## Data and uploads
+
+- Main database: `interview_booking.db`
+- Resumes: `uploads/resumes/`
+- Candidate photos: `uploads/photos/`
+
+The upload folders and local databases are excluded from Git by `.gitignore`. They must be included in server backups.
+
+## Security notes
+
+- Passwords are stored as hashes, never plain text.
+- Resumes and candidate photos are served through authenticated routes rather than public static URLs.
+- Only a candidate owner, HR, or an administrator can access candidate documents.
+- File extensions and upload sizes are restricted.
+- Use HTTPS, a strong `SECRET_KEY`, regular backups, and unique production passwords before public use.
+- Use one Gunicorn worker while the application uses SQLite to avoid unnecessary concurrent-write contention.
+
+## License
+
+This project is private and intended for BluJay Technologies internal interview operations.

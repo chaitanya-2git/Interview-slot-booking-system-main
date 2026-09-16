@@ -1,35 +1,54 @@
 {% extends "base.html" %}
 
+{% block extra_head %}
+<link rel="stylesheet" href="{{ url_for('static', filename='css/login.css', v='2') }}">
+{% endblock %}
+
 {% block content %}
-<div class="standalone-page">
-    <div class="form-shell">
-        <div class="form-shell-header" style="text-align:center;">
-            <img src="{{ url_for('static', filename='images/blujay-logo.png') }}" class="auth-logo" alt="BluJay Technologies">
-            <div class="form-shell-title">Welcome back</div>
-            <div class="form-shell-sub">Sign in to your BluJay Interview Management account</div>
+<main class="login-page">
+    <section class="login-showcase" aria-label="BluJay Interviews introduction">
+        <div class="login-showcase-inner">
+            <a class="login-brand" href="{{ url_for('main.login') }}" aria-label="BluJay Interviews home">
+                <img src="{{ url_for('static', filename='images/blujay-logo.png') }}" alt="BluJay Technologies">
+                <span>BluJay Interviews</span>
+            </a>
+            <div class="login-showcase-copy">
+                <p class="login-eyebrow"><i class="bi bi-calendar2-check"></i> INTERVIEW OPERATIONS</p>
+                <h1>Interviews, organised with confidence.</h1>
+                <p>One secure workspace for candidates, recruiters, and hiring teams to schedule every important conversation.</p>
+            </div>
+            <div class="login-benefits" aria-label="Portal benefits">
+                <div><i class="bi bi-lightning-charge-fill"></i><span><strong>Simple scheduling</strong><small>Book and manage interview slots in minutes.</small></span></div>
+                <div><i class="bi bi-shield-check"></i><span><strong>Role-based access</strong><small>Candidate, HR, and admin workflows in one portal.</small></span></div>
+            </div>
         </div>
+        <div class="login-orb login-orb-one"></div><div class="login-orb login-orb-two"></div>
+    </section>
 
-        <div class="form-shell-body">
-            <form method="POST" action="{{ url_for('main.login') }}">
-                <div class="form-group">
+    <section class="login-panel">
+        <div class="login-card">
+            <div class="login-card-top">
+                <span class="login-mobile-mark"><i class="bi bi-calendar2-check"></i></span>
+                <p class="login-eyebrow">SECURE SIGN IN</p>
+                <h2>Welcome back</h2>
+                <p>Use your BluJay account to continue.</p>
+            </div>
+
+            <form method="POST" action="{{ url_for('main.login') }}" class="login-form">
+                <div class="login-field">
                     <label for="email">Email address</label>
-                    <input type="email" id="email" name="email" class="form-control" placeholder="Enter your email" required autocomplete="email">
+                    <div class="login-input-wrap"><i class="bi bi-envelope"></i><input type="email" id="email" name="email" placeholder="name@company.com" required autocomplete="email"></div>
                 </div>
-
-                <div class="form-group">
+                <div class="login-field">
                     <label for="password">Password</label>
-                    <input type="password" id="password" name="password" class="form-control" placeholder="Enter your password" required autocomplete="current-password">
+                    <div class="login-input-wrap"><i class="bi bi-lock"></i><input type="password" id="password" name="password" placeholder="Enter your password" required autocomplete="current-password"></div>
                 </div>
-
-                <button type="submit" class="btn btn-primary w-100" style="margin-top:8px;">
-                    Sign in to portal
-                </button>
+                <button type="submit" class="login-submit">Sign in to portal <i class="bi bi-arrow-right"></i></button>
             </form>
 
-            <p class="auth-help-text">
-                Need an account? Please contact your HR administrator.
-            </p>
+            <div class="login-support"><i class="bi bi-person-workspace"></i><span>Need access? <strong>Contact your HR administrator.</strong></span></div>
         </div>
-    </div>
-</div>
+        <p class="login-footer"><i class="bi bi-shield-lock"></i> Your information is protected and private.</p>
+    </section>
+</main>
 {% endblock %}

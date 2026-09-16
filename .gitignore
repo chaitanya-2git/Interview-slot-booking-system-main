@@ -6,3 +6,18 @@ __pycache__/
 .env
 .venv/
 venv/
+.playwright-python/
+
+# Playwright output
+playwright-report/
+test-results/
+.playwright/
+e2e/.tmp/
+playwright/.auth/
+node_modules/
+*.log
+.tmp-*.png
+
+# Private candidate resume uploads
+uploads/resumes/
+uploads/photos/

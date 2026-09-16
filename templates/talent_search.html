@@ -1,0 +1,23 @@
+{% extends "base.html" %}
+{% block extra_head %}
+<link rel="stylesheet" href="{{ url_for('static', filename='css/candidates.css', v='3') }}">
+{% endblock %}
+{% block content %}
+<main class="candidate-manager">
+  <header class="cm-header"><div><p class="cm-eyebrow">TALENT DISCOVERY</p><h1>Talent Search</h1><p>Search a skill and optional experience requirement to find the right candidate.</p></div><a class="btn btn-secondary" href="{{ url_for('main.hr_dashboard') }}">Dashboard</a></header>
+  <section class="cm-directory">
+    <form method="GET" class="talent-search-form">
+      <div class="form-group"><label for="query">Skill and experience</label><input id="query" name="query" class="form-control" placeholder="Example: DevOps 5+ years" value="{{ filters.query }}"><small>Enter a skill alone, or add the minimum experience: <strong>DevOps 5+ years</strong>.</small></div>
+      <div class="form-actions"><button class="btn btn-primary" type="submit"><i class="bi bi-search"></i> Search Talent</button><a class="btn btn-secondary" href="{{ url_for('main.talent_search') }}">Clear</a></div>
+    </form>
+    <p id="candidateResults">{{ candidates|length }} candidate(s) found</p>
+    <div class="cm-grid">
+      {% for candidate in candidates %}
+      <article class="cm-card talent-result-card"><div class="cm-card-top">{% if candidate.photo_path %}<img class="cm-avatar cm-avatar-photo" src="{{ url_for('main.candidate_photo', user_id=candidate.id) }}" alt="{{ candidate.name }} profile photo">{% else %}<span class="cm-avatar">{{ candidate.name[0]|upper }}</span>{% endif %}<span class="cm-status {{ 'is-active' if candidate.is_active else 'is-inactive' }}">{{ 'Active' if candidate.is_active else 'Inactive' }}</span></div>
+      <h3>{{ candidate.name }}</h3><p class="cm-email"><i class="bi bi-envelope"></i>{{ candidate.email }}</p><div class="talent-meta"><span><i class="bi bi-briefcase"></i>{{ candidate.experience_years ~ ' years' if candidate.experience_years is not none else 'Experience not submitted' }}</span>{% if candidate.location %}<span><i class="bi bi-geo-alt"></i>{{ candidate.location }}</span>{% endif %}</div><p class="talent-skills"><i class="bi bi-stars"></i><span>{{ candidate.skills or 'Skills not submitted' }}</span></p>
+      <div class="cm-actions"><a href="{{ url_for('main.candidate_details', user_id=candidate.id) }}"><i class="bi bi-person-vcard"></i> View profile</a>{% if candidate.resume_path %}<a href="{{ url_for('main.candidate_resume', user_id=candidate.id) }}"><i class="bi bi-download"></i> Download resume</a>{% endif %}</div></article>
+      {% else %}<div class="cm-empty"><i class="bi bi-search"></i><h3>No matching candidates</h3><p>{% if filters.query %}No candidate has the required skill and experience for “{{ filters.query }}”.{% else %}Candidates will appear here when profiles are added.{% endif %}</p></div>{% endfor %}
+    </div>
+  </section>
+</main>
+{% endblock %}

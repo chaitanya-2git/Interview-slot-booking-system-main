@@ -1227,3 +1227,9 @@ body { background: linear-gradient(135deg, #f7faff 0%, #eef4fc 48%, #f7fbff 100%
   .form-shell-body { padding: 0 18px 24px; }
   .auth-logo { height: 58px; margin-bottom: 12px; }
 }
+
+.sidebar-avatar.sidebar-avatar-photo { display: block; padding: 0; object-fit: cover; }
+
+/* Next interview actions: clear, aligned controls on the blue card. */
+.next-interview-card .ni-actions { display: flex; align-items: stretch; gap: 10px; margin-top: 24px; }.next-interview-card .ni-cancel-form { display: flex; margin: 0; }.next-interview-card .ni-btn { display: inline-flex; min-height: 42px; align-items: center; justify-content: center; gap: 8px; padding: 10px 15px; border: 1px solid transparent; border-radius: 10px; cursor: pointer; font-size: 13px; font-weight: 700; line-height: 1; transition: transform .18s ease, box-shadow .18s ease, background .18s ease; }.next-interview-card .ni-btn:hover, .next-interview-card .ni-btn:focus-visible { transform: translateY(-2px); box-shadow: 0 8px 16px rgba(4,31,79,.22); }.next-interview-card .ni-btn:focus-visible { outline: 3px solid rgba(255,255,255,.72); outline-offset: 2px; }.next-interview-card .ni-btn-primary { color: #12386f; background: #fff; }.next-interview-card .ni-btn-primary:hover { background: #edf6ff; }.next-interview-card .ni-btn-secondary { color: #fff; background: rgba(255,255,255,.13); border-color: rgba(255,255,255,.35); }.next-interview-card .ni-btn-secondary:hover { background: rgba(255,255,255,.23); }.next-interview-card .ni-btn-danger { color: #fff; background: rgba(153,24,46,.32); border-color: rgba(255,214,221,.48); }.next-interview-card .ni-btn-danger:hover { background: rgba(177,30,56,.62); }
+@media (max-width: 768px) { .next-interview-card .ni-actions, .next-interview-card .ni-cancel-form { display: grid; grid-template-columns: 1fr; width: 100%; }.next-interview-card .ni-btn { width: 100%; } }

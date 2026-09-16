@@ -1,0 +1,114 @@
+﻿{% extends "base.html" %}
+
+{% block extra_head %}
+<link rel="stylesheet" href="{{ url_for('static', filename='css/candidate-profile.css', v='4') }}">
+{% endblock %}
+
+{% block content %}
+<main class="form-page candidate-profile-page">
+  <section class="form-shell candidate-profile-shell">
+    <div class="form-shell-header candidate-profile-hero">
+      <div class="candidate-profile-icon"><i class="bi bi-person-vcard"></i></div><div class="form-shell-title">Candidate Profile</div>
+      <p class="form-shell-sub">Complete your professional details so the hiring team can find and review your profile.</p>
+      <div class="candidate-progress"><div class="candidate-progress-label"><strong>{{ profile_percent }}% complete</strong><span>{{ profile_completed_fields }} of {{ profile_total_fields }} key details</span></div><div class="candidate-progress-track"><div style="width:{{ profile_percent }}%;"></div></div></div>
+    </div>
+    <form method="POST" enctype="multipart/form-data">
+      <div class="form-grid">
+        <div class="form-group"><label for="phone">Phone number</label><input id="phone" name="phone" class="form-control" value="{{ profile.phone or '' }}"></div>
+        <div class="form-group"><label for="location">Current location</label><input id="location" name="location" class="form-control" value="{{ profile.location or '' }}"></div>
+        <div class="form-group profile-photo-group"><label for="photo">Profile photo <span>Optional</span></label><div class="profile-photo-upload">{% if profile.photo_path %}<img src="{{ url_for('main.candidate_photo', user_id=profile.id) }}" alt="Your profile photo">{% else %}<div class="profile-photo-placeholder"><i class="bi bi-person"></i></div>{% endif %}<div><input id="photo" name="photo" type="file" accept=".jpg,.jpeg,.png,.webp,image/jpeg,image/png,image/webp" class="form-control"><small>JPG, PNG, or WEBP. Maximum file size: 2 MB.</small></div></div></div>
+        <div class="form-group"><label for="current_company">Current company</label><input id="current_company" name="current_company" class="form-control" value="{{ profile.current_company or '' }}"></div>
+        <div class="form-group"><label for="designation">Designation</label><input id="designation" name="designation" class="form-control" value="{{ profile.designation or '' }}"></div>
+        <div class="form-group"><label for="experience_years">Experience (years)</label><input id="experience_years" name="experience_years" type="number" min="0" step="0.5" class="form-control" value="{{ profile.experience_years or '' }}"></div>
+        <div class="form-group"><label for="notice_period">Notice period</label><input id="notice_period" name="notice_period" class="form-control" value="{{ profile.notice_period or '' }}"></div>
+        <div class="form-group"><label for="expected_salary">Expected salary</label><input id="expected_salary" name="expected_salary" class="form-control" value="{{ profile.expected_salary or '' }}"></div>
+        <div class="form-group"><label for="linkedin_url">LinkedIn URL</label><input id="linkedin_url" name="linkedin_url" type="url" class="form-control" value="{{ profile.linkedin_url or '' }}"></div>
+        <div class="form-group"><label for="portfolio_url">Portfolio URL <span>Optional</span></label><input id="portfolio_url" name="portfolio_url" type="url" class="form-control" value="{{ profile.portfolio_url or '' }}"></div>
+      </div>
+      <div class="form-group"><label for="skills">Skills</label><textarea id="skills" name="skills" class="form-control" rows="3" placeholder="Example: Python, Flask, SQL, React">{{ profile.skills or '' }}</textarea></div>
+      <div class="form-group"><label for="education">Education</label><textarea id="education" name="education" class="form-control" rows="3">{{ profile.education or '' }}</textarea></div>
+      <div class="form-group"><label for="resume">Resume (PDF, DOC, or DOCX)</label><input id="resume" name="resume" type="file" accept=".pdf,.doc,.docx" class="form-control"><small>Maximum file size: 8 MB.</small>{% if profile.resume_original_name %}<small>Current resume: <a href="{{ url_for('main.candidate_resume', user_id=profile.id) }}">{{ profile.resume_original_name }}</a></small>{% endif %}</div>
+      <div class="form-actions candidate-profile-actions"><a class="btn btn-secondary" href="{{ url_for('main.candidate_dashboard') }}" id="cancelProfile"><i class="bi bi-arrow-left"></i> Back</a><button class="btn btn-secondary" type="button" id="previousStep" hidden><i class="bi bi-arrow-left"></i> Previous</button><button class="btn btn-primary" type="button" id="nextStep">Continue <i class="bi bi-arrow-right"></i></button><button class="btn btn-primary" type="submit" id="saveProfile" hidden><i class="bi bi-check2-circle"></i> Save Profile</button></div>
+    </form>
+    {% if profile.resume_original_name %}<form method="POST" action="{{ url_for('main.remove_candidate_resume') }}" style="margin-top:12px;" onsubmit="return confirm('Remove your current resume?')"><button class="btn btn-secondary btn-sm" type="submit">Remove Resume</button></form>{% endif %}
+  </section>
+</main>
+{% endblock %}
+{% block extra_scripts %}
+<script>
+(() => {
+  const form = document.querySelector('.candidate-profile-shell > form');
+  if (!form) return;
+  const stepFields = {
+    1: ['resume'],
+    2: ['phone', 'location', 'photo', 'linkedin_url'],
+    3: ['current_company', 'designation', 'experience_years', 'notice_period', 'expected_salary', 'skills', 'education']
+  };
+  const hero = document.querySelector('.candidate-profile-hero');
+  const stepper = document.createElement('div');
+  stepper.className = 'onboarding-steps';
+  stepper.innerHTML = '<div class="onboarding-step" data-step="1"><span>1</span><strong>Resume</strong></div><div class="onboarding-step" data-step="2"><span>2</span><strong>Basics</strong></div><div class="onboarding-step" data-step="3"><span>3</span><strong>Experience</strong></div>';
+  hero.insertAdjacentElement('afterend', stepper);
+  const intro = document.createElement('div');
+  intro.className = 'onboarding-intro';
+  form.prepend(intro);
+  const groups = Object.entries(stepFields).flatMap(([step, names]) => names.map(name => ({ step: Number(step), field: form.elements[name], group: form.elements[name]?.closest('.form-group') })).filter(item => item.group));
+  const previous = document.getElementById('previousStep');
+  const next = document.getElementById('nextStep');
+  const save = document.getElementById('saveProfile');
+  const cancel = document.getElementById('cancelProfile');
+  let currentStep = 1;
+  const copy = {
+    1: ['STEP 1 OF 3', 'Upload and parse your resume', 'Start here to prefill your phone, experience, skills, and education. You can edit every extracted detail later.'],
+    2: ['STEP 2 OF 3', 'Complete the essentials', 'Check the extracted contact details and enter anything your resume does not include.'],
+    3: ['STEP 3 OF 3', 'Review your experience', 'Confirm your role, skills, and education before saving your complete profile.']
+  };
+  function showStep(step) {
+    currentStep = step;
+    groups.forEach(item => { item.group.hidden = item.step !== step; });
+    document.querySelectorAll('.onboarding-step').forEach(item => { const number = Number(item.dataset.step); item.classList.toggle('is-active', number === step); item.classList.toggle('is-complete', number < step); });
+    intro.innerHTML = `<p>${copy[step][0]}</p><h2>${copy[step][1]}</h2><span>${copy[step][2]}</span>`;
+    previous.hidden = step === 1; cancel.hidden = step !== 1; next.hidden = step === 3; save.hidden = step !== 3;
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+  }
+  function validateCurrentStep() {
+    const invalid = groups.filter(item => item.step === currentStep && item.field.required).map(item => item.field).find(field => !field.checkValidity());
+    if (!invalid) return true;
+    invalid.reportValidity(); invalid.focus(); return false;
+  }
+  next.addEventListener('click', () => { if (validateCurrentStep()) showStep(currentStep + 1); });
+  previous.addEventListener('click', () => showStep(currentStep - 1));
+
+  const resumeField = form.elements.resume.closest('.form-group');
+  const parseButton = document.createElement('button');
+  parseButton.type = 'button'; parseButton.className = 'btn btn-secondary resume-parse-button'; parseButton.innerHTML = '<i class="bi bi-magic"></i> Parse resume';
+  const status = document.createElement('small'); status.className = 'resume-parse-status'; status.textContent = 'Upload a PDF or DOCX to prefill your profile. You can edit every extracted detail.';
+  const review = document.createElement('div'); review.className = 'resume-review'; review.hidden = true;
+  resumeField.append(parseButton, status, review);
+  parseButton.addEventListener('click', async () => {
+    const file = form.elements.resume.files[0];
+    if (!file) { status.textContent = 'Choose a resume before parsing.'; return; }
+    parseButton.disabled = true; parseButton.innerHTML = '<span class="spinner-border spinner-border-sm"></span> Parsing resume'; status.textContent = 'Extracting your details…';
+    try {
+      const data = new FormData(); data.append('resume', file);
+      const response = await fetch('{{ url_for('main.parse_candidate_resume') }}', { method: 'POST', body: data });
+      const payload = await response.json();
+      if (!response.ok || !payload.success) throw new Error(payload.message || 'Unable to parse this resume.');
+      const parsed = payload.parsed || {};
+      ['phone', 'location', 'current_company', 'designation', 'experience_years', 'skills', 'education', 'linkedin_url', 'portfolio_url'].forEach(name => {
+        if (parsed[name]) form.elements[name].value = parsed[name];
+      });
+      review.replaceChildren();
+      const title = document.createElement('strong'); title.innerHTML = '<i class="bi bi-check-circle-fill"></i> Resume details ready for review'; review.append(title);
+      const summary = document.createElement('div'); summary.className = 'parsed-summary';
+      [['Phone', parsed.phone], ['Location', parsed.location], ['Company', parsed.current_company], ['Role', parsed.designation], ['Experience', parsed.experience_years && (parsed.experience_years + ' years')], ['Skills', parsed.skills], ['Education', parsed.education], ['LinkedIn', parsed.linkedin_url], ['Portfolio', parsed.portfolio_url]].filter(([, value]) => value).forEach(([label, value]) => { const item = document.createElement('div'); const key = document.createElement('small'); const valueElement = document.createElement('span'); key.textContent = label; valueElement.textContent = value; item.append(key, valueElement); summary.append(item); });
+      if (!summary.children.length) summary.textContent = parsed.has_extractable_text ? 'No standard details were found. You can enter your information manually.' : 'This file has no readable text. Use a text-based PDF or DOCX, then enter the details manually.';
+      review.append(summary); review.hidden = false; status.textContent = `${payload.resume_name} is ready. The editable details are open below.`;
+      form.elements.resume.value = '';
+      showStep(2);
+    } catch (error) { status.textContent = error.message; } finally { parseButton.disabled = false; parseButton.innerHTML = '<i class="bi bi-magic"></i> Parse resume'; }
+  });
+  showStep(1);
+})();
+</script>
+{% endblock %}

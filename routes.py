@@ -1,4 +1,9 @@
-from flask import Blueprint, render_template, request, redirect, url_for, session, flash, jsonify
+import os
+from uuid import uuid4
+from datetime import datetime, timedelta, timezone
+from flask import Blueprint, render_template, request, redirect, url_for, session, flash, jsonify, send_from_directory, abort
+from werkzeug.utils import secure_filename
+from resume_parser import parse_resume
 from database import register_user, login_user, get_user_by_id, get_all_users
 from database import create_interview_slot, get_all_interview_slots, get_interview_slot_by_id, update_interview_slot, delete_interview_slot
 from database import get_available_slots, create_booking, get_user_bookings, get_all_bookings, get_todays_interviews, reschedule_interview
@@ -19,8 +24,46 @@ from database import (
     update_user_status,
     reset_user_password
 )
+from database import get_candidate_profile, save_candidate_profile, search_candidates, clear_candidate_resume
 
 app_routes = Blueprint('main', __name__)
+
+UPLOAD_FOLDER = os.path.join(os.path.dirname(__file__), 'uploads', 'resumes')
+PHOTO_UPLOAD_FOLDER = os.path.join(os.path.dirname(__file__), 'uploads', 'photos')
+ALLOWED_RESUME_EXTENSIONS = {'pdf', 'doc', 'docx'}
+ALLOWED_PHOTO_EXTENSIONS = {'jpg', 'jpeg', 'png', 'webp'}
+MAX_PHOTO_SIZE = 2 * 1024 * 1024
+
+
+def allowed_resume(filename):
+    return '.' in filename and filename.rsplit('.', 1)[1].lower() in ALLOWED_RESUME_EXTENSIONS
+
+
+def allowed_photo(filename):
+    return '.' in filename and filename.rsplit('.', 1)[1].lower() in ALLOWED_PHOTO_EXTENSIONS
+
+
+# India is UTC+05:30 year-round and does not observe daylight saving time.
+APP_TIMEZONE = timezone(timedelta(hours=5, minutes=30))
+
+
+def slot_has_started(interview_date, start_time, now=None):
+    """Return True when a slot is earlier than the current India time."""
+    try:
+        slot_date = datetime.strptime(interview_date, '%Y-%m-%d').date()
+        slot_clock = next(
+            datetime.strptime(str(start_time).strip().upper(), pattern).time()
+            for pattern in ('%I:%M %p', '%H:%M', '%H:%M:%S')
+        )
+    except (TypeError, ValueError, StopIteration):
+        return False
+
+    current = now or datetime.now(APP_TIMEZONE)
+    if slot_date < current.date():
+        return True
+    if slot_date > current.date():
+        return False
+    return slot_clock < current.timetz().replace(tzinfo=None)
 
 
 def password_change_required():
@@ -176,6 +219,7 @@ def candidate_dashboard():
     notifications = get_notifications(session['user_id'], limit=10)
     unread_count = get_unread_notification_count(session['user_id'])
     previous_history = get_previous_interview_history(session['user_id'])
+    profile = get_candidate_profile(session['user_id'])
 
     return render_template(
         'candidate_dashboard.html',
@@ -188,7 +232,8 @@ def candidate_dashboard():
         stats=stats,
         notifications=notifications,
         unread_count=unread_count,
-        previous_history=previous_history
+        previous_history=previous_history,
+        profile=profile
     )
 @app_routes.route('/available-slots-by-date', methods=['GET'])
 def available_slots_by_date():
@@ -213,7 +258,11 @@ def available_slots_by_date():
             return jsonify({'error': 'Failed to get slots'}), 500
         
         # Filter out deprecated 09:00 AM slots
-        valid_slots = [slot for slot in all_slots if slot['start_time'] != '09:00 AM']
+        valid_slots = [
+            slot for slot in all_slots
+            if slot['start_time'] != '09:00 AM'
+            and not slot_has_started(interview_date, slot['start_time'])
+        ]
         
         # Aggregate by start_time
         aggregated_blocks = {}
@@ -263,6 +312,10 @@ def book_slot():
     
     if not interview_date or not start_time:
         flash('Invalid request parameters.', 'error')
+        return redirect(url_for('main.candidate_dashboard', _anchor='my-bookings'))
+
+    if slot_has_started(interview_date, start_time):
+        flash('That interview slot has already started or passed. Please select a later time.', 'error')
         return redirect(url_for('main.candidate_dashboard', _anchor='my-bookings'))
 
     from database import create_booking_by_time
@@ -466,7 +519,11 @@ def candidate_change_slot(booking_id):
         if all_slots is None:
             return jsonify({'success': False, 'error': 'Failed to get slots'}), 500
             
-        valid_slots = [slot for slot in all_slots if slot['start_time'] != '09:00 AM']
+        valid_slots = [
+            slot for slot in all_slots
+            if slot['start_time'] != '09:00 AM'
+            and not slot_has_started(interview_date, slot['start_time'])
+        ]
         
         # Aggregate by start_time
         aggregated_blocks = {}
@@ -762,7 +819,11 @@ def get_slots_by_date_route():
             return jsonify({'error': 'Failed to get slots'}), 500
         
         # Filter out deprecated 09:00 AM slots
-        valid_slots = [slot for slot in all_slots if slot['start_time'] != '09:00 AM']
+        valid_slots = [
+            slot for slot in all_slots
+            if slot['start_time'] != '09:00 AM'
+            and not slot_has_started(interview_date, slot['start_time'])
+        ]
         
         # Aggregate by start_time
         aggregated_blocks = {}
@@ -798,6 +859,214 @@ def manage_candidates():
     candidates = get_candidates()
     return render_template('manage_candidates.html', candidates=candidates)
 
+
+@app_routes.route('/candidate-profile', methods=['GET', 'POST'])
+def candidate_profile():
+    """Candidate-owned onboarding profile and resume upload."""
+    if session.get('user_role') != 'candidate':
+        return redirect(url_for('main.home'))
+
+    profile = get_candidate_profile(session['user_id'])
+
+    def profile_progress(data):
+        fields = ('phone', 'location', 'current_company', 'designation', 'experience_years', 'skills', 'education', 'resume_path')
+        completed = sum(1 for field in fields if data and data.get(field) not in (None, ''))
+        return completed, len(fields), round((completed / len(fields)) * 100)
+    if request.method == 'POST':
+        uploaded = request.files.get('resume')
+        photo_upload = request.files.get('photo')
+        resume_path = None
+        resume_name = None
+        photo_path = None
+        pending_resume = session.get('pending_candidate_resume') or {}
+        if photo_upload and photo_upload.filename and not allowed_photo(photo_upload.filename):
+            flash('Upload a JPG, PNG, or WEBP profile photo.', 'error')
+            completed, total, percent = profile_progress(profile)
+            return render_template('candidate_profile.html', profile=profile, profile_completed_fields=completed, profile_total_fields=total, profile_percent=percent)
+        if uploaded and uploaded.filename:
+            if not allowed_resume(uploaded.filename):
+                flash('Upload a PDF, DOC, or DOCX resume.', 'error')
+                completed, total, percent = profile_progress(profile)
+                return render_template('candidate_profile.html', profile=profile, profile_completed_fields=completed, profile_total_fields=total, profile_percent=percent)
+            os.makedirs(UPLOAD_FOLDER, exist_ok=True)
+            resume_name = secure_filename(uploaded.filename)
+            stored_name = f"{session['user_id']}-{uuid4().hex}-{resume_name}"
+            uploaded.save(os.path.join(UPLOAD_FOLDER, stored_name))
+            resume_path = stored_name
+            try:
+                parsed = parse_resume(os.path.join(UPLOAD_FOLDER, stored_name))
+            except Exception:
+                parsed = {}
+        else:
+            parsed = {}
+            # A resume parsed by the review step is saved only after the
+            # candidate confirms the populated form.
+            resume_path = pending_resume.get('path')
+            resume_name = pending_resume.get('name')
+
+        if photo_upload and photo_upload.filename:
+            os.makedirs(PHOTO_UPLOAD_FOLDER, exist_ok=True)
+            photo_name = secure_filename(photo_upload.filename)
+            photo_path = f"{session['user_id']}-{uuid4().hex}-{photo_name}"
+            saved_photo = os.path.join(PHOTO_UPLOAD_FOLDER, photo_path)
+            photo_upload.save(saved_photo)
+            if os.path.getsize(saved_photo) > MAX_PHOTO_SIZE:
+                os.remove(saved_photo)
+                flash('Profile photos must be 2 MB or smaller.', 'error')
+                completed, total, percent = profile_progress(profile)
+                return render_template('candidate_profile.html', profile=profile, profile_completed_fields=completed, profile_total_fields=total, profile_percent=percent)
+
+        profile_data = {
+            'phone': request.form.get('phone', '').strip() or parsed.get('phone', ''),
+            'location': request.form.get('location', '').strip(),
+            'current_company': request.form.get('current_company', '').strip(),
+            'designation': request.form.get('designation', '').strip(),
+            'experience_years': request.form.get('experience_years') or parsed.get('experience_years') or None,
+            'notice_period': request.form.get('notice_period', '').strip(),
+            'expected_salary': request.form.get('expected_salary', '').strip(),
+            'linkedin_url': request.form.get('linkedin_url', '').strip(),
+            'portfolio_url': profile.get('portfolio_url', ''),
+            'skills': request.form.get('skills', '').strip() or parsed.get('skills', ''),
+            'education': request.form.get('education', '').strip() or parsed.get('education', ''),
+            'photo_path': photo_path,
+            'resume_path': resume_path,
+            'resume_original_name': resume_name,
+        }
+        effective_resume = resume_path or profile.get('resume_path')
+        profile_data['profile_completed'] = bool(
+            profile_data['phone'] and profile_data['location'] and profile_data['designation']
+            and profile_data['experience_years'] and profile_data['skills'] and effective_resume
+        )
+        save_candidate_profile(session['user_id'], profile_data)
+        if resume_path and profile.get('resume_path') and profile['resume_path'] != resume_path:
+            previous_resume = os.path.join(UPLOAD_FOLDER, profile['resume_path'])
+            if os.path.isfile(previous_resume):
+                os.remove(previous_resume)
+        if photo_path and profile.get('photo_path') and profile['photo_path'] != photo_path:
+            previous_photo = os.path.join(PHOTO_UPLOAD_FOLDER, profile['photo_path'])
+            if os.path.isfile(previous_photo):
+                os.remove(previous_photo)
+        # Notify recruiters only when this is the candidate's first completed
+        # onboarding submission. Later edits should not create notification noise.
+        if profile_data['profile_completed'] and not profile.get('profile_completed'):
+            for recruiter in get_all_users():
+                if recruiter.get('role') in ('hr', 'admin') and recruiter.get('is_active'):
+                    create_notification(
+                        recruiter['id'],
+                        'candidate_onboarded',
+                        f"New candidate onboarding completed: {profile['name']}."
+                    )
+        session.pop('pending_candidate_resume', None)
+        flash('Profile saved successfully. Your candidate profile is ready for review.', 'success')
+        return redirect(url_for('main.candidate_dashboard'))
+    completed, total, percent = profile_progress(profile)
+    return render_template('candidate_profile.html', profile=profile, profile_completed_fields=completed, profile_total_fields=total, profile_percent=percent)
+
+
+@app_routes.route('/candidate-profile/parse-resume', methods=['POST'])
+def parse_candidate_resume():
+    """Upload a candidate resume temporarily and return safe parsed fields for review."""
+    if session.get('user_role') != 'candidate':
+        return jsonify({'success': False, 'message': 'Please sign in as a candidate.'}), 403
+
+    uploaded = request.files.get('resume')
+    if not uploaded or not uploaded.filename:
+        return jsonify({'success': False, 'message': 'Choose a resume first.'}), 400
+    if not allowed_resume(uploaded.filename):
+        return jsonify({'success': False, 'message': 'Upload a PDF, DOC, or DOCX resume.'}), 400
+
+    os.makedirs(UPLOAD_FOLDER, exist_ok=True)
+    resume_name = secure_filename(uploaded.filename)
+    stored_name = f"{session['user_id']}-{uuid4().hex}-{resume_name}"
+    stored_path = os.path.join(UPLOAD_FOLDER, stored_name)
+    uploaded.save(stored_path)
+
+    # Replacing an unconfirmed upload should not leave private files behind.
+    previous_pending = session.get('pending_candidate_resume') or {}
+    previous_pending_path = previous_pending.get('path')
+    if previous_pending_path and previous_pending_path != stored_name:
+        old_file = os.path.join(UPLOAD_FOLDER, previous_pending_path)
+        if os.path.isfile(old_file):
+            os.remove(old_file)
+
+    try:
+        parsed = parse_resume(stored_path)
+    except Exception:
+        parsed = {}
+    session['pending_candidate_resume'] = {'path': stored_name, 'name': resume_name}
+    return jsonify({
+        'success': True,
+        'resume_name': resume_name,
+        'parsed': parsed,
+        'message': 'Resume parsed. Review the extracted details before saving.'
+    })
+
+
+@app_routes.route('/candidate-resume/<int:user_id>')
+def candidate_resume(user_id):
+    """Authenticated resume download for its owner, HR, or Admin."""
+    if 'user_id' not in session or (session['user_id'] != user_id and session['user_role'] not in ('hr', 'admin')):
+        return redirect(url_for('main.home'))
+    profile = get_candidate_profile(user_id)
+    if not profile or not profile.get('resume_path'):
+        flash('No resume is available for this candidate.', 'error')
+        return redirect(request.referrer or url_for('main.home'))
+    return send_from_directory(UPLOAD_FOLDER, profile['resume_path'], as_attachment=True,
+                               download_name=profile.get('resume_original_name') or 'resume')
+
+
+@app_routes.route('/candidate-photo/<int:user_id>')
+def candidate_photo(user_id):
+    """Serve a profile photo only to its owner, HR, or an administrator."""
+    if 'user_id' not in session or (session['user_id'] != user_id and session.get('user_role') not in ('hr', 'admin')):
+        return redirect(url_for('main.home'))
+    profile = get_candidate_profile(user_id)
+    if not profile or not profile.get('photo_path'):
+        abort(404)
+    return send_from_directory(PHOTO_UPLOAD_FOLDER, profile['photo_path'], conditional=True)
+
+
+@app_routes.route('/candidate-resume/remove', methods=['POST'])
+def remove_candidate_resume():
+    if session.get('user_role') != 'candidate':
+        return redirect(url_for('main.home'))
+    profile = get_candidate_profile(session['user_id'])
+    if profile and profile.get('resume_path'):
+        resume_file = os.path.join(UPLOAD_FOLDER, profile['resume_path'])
+        if os.path.isfile(resume_file):
+            os.remove(resume_file)
+        clear_candidate_resume(session['user_id'])
+        flash('Resume removed. Upload a new resume to complete your profile.', 'success')
+    return redirect(url_for('main.candidate_profile'))
+
+
+@app_routes.route('/candidate-details/<int:user_id>')
+def candidate_details(user_id):
+    """Recruiter view of the candidate's onboarding profile and interviews."""
+    if session.get('user_role') not in ('hr', 'admin'):
+        return redirect(url_for('main.home'))
+    candidate = get_candidate_profile(user_id)
+    if not candidate:
+        flash('Candidate was not found.', 'error')
+        return redirect(url_for('main.manage_candidates'))
+    bookings = get_user_bookings(user_id)
+    return render_template('candidate_details.html', candidate=candidate, bookings=bookings)
+
+
+@app_routes.route('/talent-search')
+def talent_search():
+    if session.get('user_role') not in ('hr', 'admin'):
+        return redirect(url_for('main.home'))
+    # Accept the older `skill` parameter too, so an already-open Talent Search
+    # tab continues to work after the interface was simplified to one field.
+    filters = {'query': (request.args.get('query', '') or request.args.get('skill', '')).strip()}
+    try:
+        candidates = search_candidates(query=filters['query'])
+    except ValueError:
+        candidates = []
+        flash('Use a valid experience value such as "DevOps 5+ years".', 'error')
+    return render_template('talent_search.html', candidates=candidates, filters=filters)
+
 @app_routes.route('/create-candidate', methods=['GET', 'POST'])
 def create_candidate():
     if 'user_id' not in session or session['user_role'] not in ('hr', 'admin'):
@@ -812,11 +1081,15 @@ def create_candidate():
             flash('Please fill in all fields.', 'error')
             return render_template('create_candidate.html')
         
-        # Create candidate with force_password_change=1
-        user_id = register_user(name, email, password, 'candidate', is_active=1, force_password_change=1)
+        user_id = register_user(name, email, password, 'candidate', is_active=1, force_password_change=0)
         
         if user_id:
-            flash('Candidate created successfully. They will be required to change their password on first login.', 'success')
+            create_notification(
+                user_id,
+                'onboarding_reminder',
+                'Welcome to BluJay Interviews. Complete your profile and upload your resume so recruiters can review your skills.'
+            )
+            flash('Candidate created successfully. They can sign in with the password you set.', 'success')
             return redirect(url_for('main.manage_candidates'))
         else:
             flash('Email already registered.', 'error')
@@ -893,7 +1166,7 @@ def reset_candidate_password(user_id):
             return render_template('reset_candidate_password.html', candidate=candidate)
         
         reset_user_password(user_id, new_password)
-        flash('Password reset successfully. The candidate will be required to change it on next login.', 'success')
+        flash('Password reset successfully. The candidate can sign in with the new password.', 'success')
         return redirect(url_for('main.manage_candidates'))
     
     return render_template('reset_candidate_password.html', candidate=candidate)
@@ -992,6 +1265,7 @@ def delete_candidate(user_id):
     candidate = get_user_by_id(user_id)
     if not candidate or candidate['role'] != 'candidate':
         return 'Candidate not found.', 404
+    candidate_profile_data = get_candidate_profile(user_id)
     session.setdefault('delete_candidate_csrf', secrets.token_urlsafe(32))
     error = None
     if request.method == 'POST':
@@ -1000,6 +1274,16 @@ def delete_candidate(user_id):
         if request.form.get('confirmation') != candidate['email']:
             error = 'Enter the candidate email exactly to confirm deletion.'
         elif delete_candidate_account(user_id):
+            # The database record has been removed; delete the private resume
+            # file afterwards when it exists. A missing file is harmless.
+            if candidate_profile_data and candidate_profile_data.get('resume_path'):
+                resume_file = os.path.join(UPLOAD_FOLDER, candidate_profile_data['resume_path'])
+                if os.path.isfile(resume_file):
+                    os.remove(resume_file)
+            if candidate_profile_data and candidate_profile_data.get('photo_path'):
+                photo_file = os.path.join(PHOTO_UPLOAD_FOLDER, candidate_profile_data['photo_path'])
+                if os.path.isfile(photo_file):
+                    os.remove(photo_file)
             flash('Candidate and related records deleted successfully.', 'success')
             return redirect(url_for('main.manage_candidates'))
         else:
@@ -1028,7 +1312,7 @@ def manage_admins():
         elif len(email) > 254 or not re.fullmatch(r'[^\s@]+@[^\s@]+\.[^\s@]+', email):
             error = 'Enter a valid email address.'
         elif len(password) < 8:
-            error = 'Use at least 8 characters for the temporary password.'
+            error = 'Use at least 8 characters for the password.'
         elif password != request.form.get('confirm_password'):
             error = 'The passwords do not match.'
         else:
@@ -1039,8 +1323,8 @@ def manage_admins():
                 conn.close()
             if duplicate:
                 error = 'That email address is already in use.'
-            elif register_user(name, email, password, 'admin', is_active=1, force_password_change=1):
-                flash('Admin created. Share their login details; they must change the password on first login.', 'success')
+            elif register_user(name, email, password, 'admin', is_active=1, force_password_change=0):
+                flash('Admin created. Share their login email and password.', 'success')
                 return redirect(url_for('main.manage_admins'))
             else:
                 error = 'That email address is already in use.'

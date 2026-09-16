@@ -1,0 +1,74 @@
+﻿{% extends "base.html" %}
+
+{% block extra_head %}
+<link rel="stylesheet" href="{{ url_for('static', filename='css/candidate-details.css', v='1') }}">
+{% endblock %}
+
+{% block content %}
+<main class="candidate-details-page">
+  <div class="candidate-details-wrap">
+    <nav class="candidate-breadcrumb" aria-label="Breadcrumb"><a href="{{ url_for('main.manage_candidates') }}"><i class="bi bi-arrow-left"></i> Candidates</a><span>/</span><span>{{ candidate.name }}</span></nav>
+
+    <header class="candidate-hero-card">
+      {% if candidate.photo_path %}<img class="candidate-avatar-xl candidate-photo" src="{{ url_for('main.candidate_photo', user_id=candidate.id) }}" alt="{{ candidate.name }} profile photo">{% else %}<div class="candidate-avatar-xl">{{ candidate.name[0]|upper }}</div>{% endif %}
+      <div class="candidate-hero-copy">
+        <div class="candidate-title-row"><h1>{{ candidate.name }}</h1><span class="candidate-status {{ 'is-active' if candidate.is_active else 'is-inactive' }}"><i class="bi bi-circle-fill"></i> {{ 'Active' if candidate.is_active else 'Inactive' }}</span></div>
+        <p>{{ candidate.designation or 'Role not provided' }}{% if candidate.current_company %}<span>at</span> {{ candidate.current_company }}{% endif %}</p>
+        <div class="candidate-hero-meta"><span><i class="bi bi-geo-alt"></i> {{ candidate.location or 'Location not provided' }}</span><span><i class="bi bi-briefcase"></i> {{ candidate.experience_years ~ ' years experience' if candidate.experience_years is not none else 'Experience not provided' }}</span><span><i class="bi bi-clock-history"></i> {{ candidate.notice_period or 'Notice period not provided' }}</span></div>
+      </div>
+      <div class="candidate-hero-actions">
+        {% if candidate.resume_path %}<a class="btn btn-primary" href="{{ url_for('main.candidate_resume', user_id=candidate.id) }}"><i class="bi bi-download"></i> Download resume</a>{% endif %}
+        <a class="btn btn-secondary" href="{{ url_for('main.edit_candidate', user_id=candidate.id) }}"><i class="bi bi-pencil-square"></i> Edit account</a>
+      </div>
+    </header>
+
+    <section class="candidate-stat-grid" aria-label="Candidate summary">
+      <article><i class="bi bi-person-check"></i><span><small>Profile status</small><strong>{{ 'Complete' if candidate.profile_completed else 'Needs details' }}</strong></span></article>
+      <article><i class="bi bi-file-earmark-text"></i><span><small>Resume</small><strong>{{ 'Uploaded' if candidate.resume_path else 'Not uploaded' }}</strong></span></article>
+      <article><i class="bi bi-calendar2-check"></i><span><small>Interviews</small><strong>{{ bookings|length }} in portal</strong></span></article>
+    </section>
+
+    <div class="candidate-content-grid">
+      <div class="candidate-primary-column">
+        <section class="detail-card">
+          <header><div><p class="detail-eyebrow">PROFILE</p><h2>Professional overview</h2></div></header>
+          <div class="detail-list">
+            <div><span><i class="bi bi-envelope"></i> Email</span><strong>{{ candidate.email }}</strong></div>
+            <div><span><i class="bi bi-telephone"></i> Phone</span><strong>{{ candidate.phone or 'Not provided' }}</strong></div>
+            <div><span><i class="bi bi-briefcase"></i> Current company</span><strong>{{ candidate.current_company or 'Not provided' }}</strong></div>
+            <div><span><i class="bi bi-cash-stack"></i> Expected salary</span><strong>{{ candidate.expected_salary or 'Not provided' }}</strong></div>
+          </div>
+          <div class="profile-links">
+            {% if candidate.linkedin_url %}<a href="{{ candidate.linkedin_url }}" target="_blank" rel="noopener"><i class="bi bi-linkedin"></i> LinkedIn profile <i class="bi bi-box-arrow-up-right"></i></a>{% endif %}
+            {% if not candidate.linkedin_url %}<p class="empty-inline">No professional links provided.</p>{% endif %}
+          </div>
+        </section>
+
+        <section class="detail-card">
+          <header><div><p class="detail-eyebrow">CAPABILITIES</p><h2>Skills and education</h2></div></header>
+          {% if candidate.skills %}<div class="skill-tags">{% for skill in candidate.skills.split(',') if skill.strip() %}<span>{{ skill.strip() }}</span>{% endfor %}</div>{% else %}<p class="empty-inline">No skills submitted yet.</p>{% endif %}
+          <div class="education-block"><span><i class="bi bi-mortarboard"></i> Education</span><p>{{ candidate.education or 'No education submitted yet.' }}</p></div>
+        </section>
+
+        <section class="detail-card interview-card">
+          <header><div><p class="detail-eyebrow">ACTIVITY</p><h2>Interview history</h2><p>{{ bookings|length }} interview booking(s) recorded for this candidate.</p></div></header>
+          {% if bookings %}
+          <div class="interview-timeline">{% for booking in bookings %}<article class="timeline-item"><div class="timeline-date"><strong>{{ booking.interview_date }}</strong><span>{{ booking.start_time }}{% if booking.end_time %} – {{ booking.end_time }}{% endif %}</span></div><div class="timeline-content"><div><strong>{{ booking.company_name or booking.license_name or 'Interview' }}</strong><span class="booking-pill {{ booking.booking_status|lower|replace(' ', '-') }}">{{ booking.booking_status }}</span></div><p>{{ booking.technology or 'Technology not provided' }}{% if booking.interview_round %} · {{ booking.interview_round }}{% endif %}</p></div></article>{% endfor %}</div>
+          {% else %}<div class="empty-state"><i class="bi bi-calendar-x"></i><strong>No interviews yet</strong><span>Interview bookings will appear here once scheduled.</span></div>{% endif %}
+        </section>
+      </div>
+
+      <aside class="candidate-side-column">
+        <section class="resume-card">
+          <div class="resume-card-icon"><i class="bi bi-file-earmark-person"></i></div>
+          <p class="detail-eyebrow">CANDIDATE RESUME</p>
+          <h2>{{ candidate.resume_original_name or 'No resume uploaded' }}</h2>
+          <p>{% if candidate.resume_path %}Download the original resume submitted during onboarding.{% else %}Ask the candidate to complete onboarding and upload a resume.{% endif %}</p>
+          {% if candidate.resume_path %}<a class="btn btn-primary w-100" href="{{ url_for('main.candidate_resume', user_id=candidate.id) }}"><i class="bi bi-download"></i> Download resume</a>{% endif %}
+        </section>
+        <section class="completion-card"><div><i class="bi bi-{{ 'check-circle-fill' if candidate.profile_completed else 'exclamation-circle' }}"></i><strong>{{ 'Profile ready for review' if candidate.profile_completed else 'Candidate action needed' }}</strong></div><p>{% if candidate.profile_completed %}The candidate has completed the required profile details.{% else %}The candidate should add remaining details or upload a resume.{% endif %}</p></section>
+      </aside>
+    </div>
+  </div>
+</main>
+{% endblock %}

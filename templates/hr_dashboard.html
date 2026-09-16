@@ -38,6 +38,9 @@
         <a href="{{ url_for('main.manage_candidates') }}" class="sidebar-link">
             <i class="bi bi-people"></i> Candidates
         </a>
+        <a href="{{ url_for('main.talent_search') }}" class="sidebar-link">
+            <i class="bi bi-search"></i> Talent Search
+        </a>
         {% if session.user_role == 'admin' %}
         <a href="{{ url_for('main.manage_admins') }}" class="sidebar-link">
             <i class="bi bi-person-gear"></i> Manage Admins
